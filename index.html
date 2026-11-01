@@ -475,11 +475,14 @@ function engine() {
   // realizados sem vínculo consomem a previsão automática da mesma categoria, no mesmo meio de pagamento (evita contar duas vezes).
   // Nunca mexe num lançamento que você digitou ou editou: só em previsões de recorrência ou da planilha original.
   const consumivel = it => it.virtual ? !it.distrib : (it.origem === 'planilha' && !it.editado);
-  for (const arr of byMonth.values()) {
+  // teto de impulsos (envelope): conta as compras pela data em que foram feitas, não pela fatura em que caem
+  const envPorData = {};
+  for (const arr of byMonth.values()) for (const it of arr) if (it.status === 'realizado' && !it.recorrencia && !it.par && !isFora(it.categoria)) { const ym = (it.data || it.competencia + '-01').slice(0, 7), k = ym + '|' + it.titular + '|' + (it.impulso ? 'impulsos' : it.categoria) + '|' + it.tipo; envPorData[k] = (envPorData[k] || 0) + (Number(it.valor) || 0); }
+  for (const [ymE, arr] of byMonth) {
     const pool = {};
     for (const it of arr) if (it.status === 'realizado' && !it.recorrencia && !it.par && !isFora(it.categoria) && !it.impulso) { const k = it.titular + '|' + it.categoria + '|' + it.tipo + '|' + (it.meio || 'conta'); pool[k] = (pool[k] || 0) + (Number(it.valor) || 0); }
-    const poolEnv = {}; // envelopes (ex.: teto de impulsos) consomem o realizado de qualquer meio
-    for (const it of arr) if (it.status === 'realizado' && !it.recorrencia && !it.par && !isFora(it.categoria)) { const k = it.titular + '|' + (it.impulso ? 'impulsos' : it.categoria) + '|' + it.tipo; poolEnv[k] = (poolEnv[k] || 0) + (Number(it.valor) || 0); }
+    const poolEnv = {}; // envelopes (ex.: teto de impulsos) consomem o realizado de qualquer meio, comprado dentro do próprio mês
+    for (const [k, v] of Object.entries(envPorData)) if (k.startsWith(ymE + '|')) poolEnv[k.slice(ymE.length + 1)] = v;
     for (const it of arr) if (it.status === 'previsto' && !isFora(it.categoria) && consumivel(it)) {
       const k = it.envelope ? it.titular + '|' + it.categoria + '|' + it.tipo : it.titular + '|' + it.categoria + '|' + it.tipo + '|' + (it.meio || 'conta'); const P = it.envelope ? poolEnv : pool; const p = P[k] || 0; if (p <= 0.004) continue;
       const use = Math.min(p, Number(it.valor) || 0); it.valorOriginal = it.valor; it.valor = round2(it.valor - use); it.consumido = round2(use); P[k] = p - use;
@@ -501,7 +504,7 @@ function engine() {
     if (arr.some(it => it.titular === pj && it.categoria === 'distrib-pj' && !it.virtual)) continue;
     let sobra = 0; for (const it of arr) if (it.titular === pj && it.status !== 'pulado' && !isFora(it.categoria)) sobra += (it.tipo === 'entrada' ? 1 : -1) * (Number(it.valor) || 0);
     sobra = round2(sobra); if (sobra <= 0.004) continue;
-    const base = {virtual: true, distrib: true, competencia: m, data: `${m}-10`, valor: sobra, meio: 'conta', status: 'previsto'};
+    const base = {virtual: true, distrib: true, competencia: m, data: `${m}-${pad(Math.min(Number(C().pjDistribDia) || 10, 28))}`, valor: sobra, meio: 'conta', status: 'previsto'};
     push(m, {...base, id: 'vd:pj:' + m, tipo: 'saida', titular: pj, categoria: 'distrib-pj', descricao: `Distribuição de lucros para ${titNome(pf)}`, fornecedor: titNome(pf), natureza: 'transferencia'});
     push(m, {...base, id: 'vd:pf:' + m, tipo: 'entrada', titular: pf, categoria: 'distribuicao-lucros', descricao: 'Distribuição de lucros da PJ', fornecedor: titNome(pj), natureza: 'recorrente'});
   }
