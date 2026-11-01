@@ -447,6 +447,7 @@ function rebuild() {
   for (const y in S.lancByYear) for (const [k, v] of S.lancByYear[y]) all.set(k, v);
   S.lanc = all; S.cache = null;
 }
+const caixaDesde = () => C().caixaDesde || '2026-10'; // a partir deste mês os cartões contam pelo que foi pago (inclusive depois que o mês fecha)
 function engine() {
   if (S.cache) return S.cache;
   const byMonth = new Map(); // ym -> array
@@ -538,6 +539,7 @@ function engine() {
     while (m <= end) {
       const f = flow[t]?.[m]; const ini = acc; let delta = f ? f.e - f.s + f.t + f.a : 0;
       if (m >= HOJE_YM) { delta += -(cis[t]?.[m] || 0) - caixaCartao(t, m); }
+      else if (m >= caixaDesde()) { delta += -(cis[t]?.[m] || 0) - (paidIn[t + '|' + m] || 0); } // mês fechado: cartão continua em regime de caixa (o que foi pago no mês)
       if (m === HOJE_YM) hoje[t] = round2(ini + (realConta[t] || 0) - (paidIn[t + '|' + m] || 0));
       acc = round2(acc + delta); saldo[t][m] = {ini, fim: acc}; m = ymAdd(m, 1);
     }
@@ -582,13 +584,14 @@ function ponte(ym, tit = S.tit) {
   const o = {ini: sd.ini, fim: sd.fim, eR: 0, sR: 0, tR: 0, eP: 0, sP: 0, tP: 0, fatPagas: 0, faturas: [], cur, fut};
   for (const it of itensMes(ym, tit)) {
     if (it.status === 'pulado') continue;
-    if (fc.cardIds.has(it.meio) && ym >= HOJE_YM) continue; // cartão entra pela fatura
+    if (fc.cardIds.has(it.meio) && ym >= caixaDesde()) continue; // cartão entra pela fatura (regime de caixa)
     if (it.meio === 'caixinha') continue;
     const v = Number(it.valor) || 0, sg = it.tipo === 'entrada' ? 1 : -1, real = !fut && (ym < HOJE_YM || it.status === 'realizado');
     if (isFora(it.categoria)) { if (real) o.tR += sg * v; else o.tP += sg * v; }
     else if (it.tipo === 'entrada') { if (real) o.eR += v; else o.eP += v; }
     else { if (real) o.sR += v; else o.sP += v; }
   }
+  if (ym < HOJE_YM && ym >= caixaDesde()) for (const t of ids) { const pg = fc.paidIn[t + '|' + ym] || 0; o.sR += pg; o.fatPagas += pg; }
   if (ym >= HOJE_YM) for (const t of ids) {
     const pg = fc.paidIn[t + '|' + ym] || 0; o.sR += pg; o.fatPagas += pg;
     for (const c of C().cartoes) if (c.titular === t && c.tipo !== 'beneficio') {
