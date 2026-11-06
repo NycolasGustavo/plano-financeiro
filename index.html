@@ -959,7 +959,7 @@ function renderNoDb() {
 function impSugestao(imp, usados) {
   const d = norm(imp.descricao + ' ' + (imp.descricaoBanco || ''));
   if (!imp.titular || !imp.meio) return {acao: 'semConta'};
-  const ligado = [...S.lanc.entries()].find(([, l]) => l.pluggyId === imp.pluggyId); if (ligado) return {acao: 'jaLigado', id: ligado[0]};
+  const ligado = [...S.lanc.entries()].find(([, l]) => l.pluggyId === imp.pluggyId || (l.pluggyIds || []).includes(imp.pluggyId)); if (ligado) return {acao: 'jaLigado', id: ligado[0]};
   if (imp.cartao && imp.tipo === 'entrada' && /pagamento recebido/.test(d)) return {acao: 'ignorar', motivo: 'Pagamento da fatura: já entra pela saída da conta.'};
   if (!imp.cartao && imp.tipo === 'entrada' && /adicionad.*credito|pix no credito/.test(d)) return {acao: 'ignorar', motivo: 'Pix no crédito: o gasto real está na fatura do cartão.'};
   if (!imp.cartao && imp.tipo === 'saida') { const par = [...S.imps.values()].find(o => o !== imp && !o.cartao && o.tipo === 'entrada' && o.data === imp.data && Math.abs(o.valor - imp.valor) < 0.011 && /adicionad.*credito|pix no credito/.test(norm(o.descricao + ' ' + (o.descricaoBanco || ''))));
@@ -971,7 +971,8 @@ function impSugestao(imp, usados) {
   for (const m of [ymAdd(m0, -1), m0, ymAdd(m0, 1)]) for (const it of (E.byMonth.get(m) || [])) {
     if (it.titular !== imp.titular || it.tipo !== imp.tipo || it.status === 'pulado' || usados.has(it.id)) continue;
     if (imp.cartao ? it.meio !== imp.meio : (it.meio && it.meio !== 'conta')) continue;
-    if (it.pluggyId && it.pluggyId !== imp.pluggyId) continue;
+    if ((it.pluggyId && it.pluggyId !== imp.pluggyId) || (it.pluggyIds || []).length) continue;
+    if (it.caixinha && !/caixinha|aplica|guard|rdb|resgat|cofrinho/.test(d)) continue; // guardar em caixinha só casa com movimento de caixinha
     const dv = Math.abs((Number(it.valor) || 0) - imp.valor), dd = Math.abs(diasEntre(it.data || m + '-01', imp.data));
     if (it.status === 'realizado' && dv < 0.011 && dd <= 4) cand.push({it, sc: dd, tipo: 'vincular'});
     else if (it.status === 'previsto' && !ORC_CATS.has(it.categoria) && dv <= Math.max(1, imp.valor * 0.03) && dd <= 12) cand.push({it, sc: 10 + dd + dv, tipo: 'quitar'});
@@ -990,6 +991,18 @@ function impLista() {
   const usados = new Set(); const out = [];
   const pend = [...S.imps.entries()].filter(([, i]) => i.estado === 'novo').sort((a, b) => (b[1].data + b[1].hora).localeCompare(a[1].data + a[1].hora));
   for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); out.push({id, imp, sg}); }
+  // segunda passada: o que sobrou para "lançar" pode ser a soma de lançamentos já feitos (ex.: Pix no crédito = gasto + encargos; dois Pix = moto + transferência)
+  const E = engine(), grupos = new Map();
+  for (const x of out) if (x.sg.acao === 'lancar') { const k = [x.imp.titular, x.imp.meio, x.imp.tipo, x.imp.data, norm(x.imp.descricao.split('|').pop())].join('|'); if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); }
+  for (const g of grupos.values()) {
+    const im = g[0].imp, tot = round2(g.reduce((a, x) => a + x.imp.valor, 0)), cand = [];
+    for (const m of [ymAdd(im.data.slice(0, 7), -1), im.data.slice(0, 7), ymAdd(im.data.slice(0, 7), 1)]) for (const it of (E.byMonth.get(m) || []))
+      if (it.status === 'realizado' && !it.virtual && !usados.has(it.id) && !it.pluggyId && it.titular === im.titular && it.tipo === im.tipo && (im.cartao ? it.meio === im.meio : (!it.meio || it.meio === 'conta')) && Math.abs(diasEntre(it.data || m + '-01', im.data)) <= 1) cand.push(it);
+    let achou = null;
+    const busca = (i, sel, soma) => { if (achou) return; if (sel.length && Math.abs(soma - tot) < 0.011 && (sel.length > 1 || g.length > 1)) { achou = sel; return; } if (sel.length >= 3) return; for (let j = i; j < cand.length; j++) busca(j + 1, [...sel, cand[j]], round2(soma + (Number(cand[j].valor) || 0))); };
+    busca(0, [], 0);
+    if (achou) { achou.forEach(it => usados.add(it.id)); for (const x of g) x.sg = {acao: 'vincularGrupo', its: achou, txt: achou.map(it => `${it.descricao} (${fmt(it.valor)})`).join(' + ')}; }
+  }
   return out;
 }
 async function impAplica(id, sgOver) {
@@ -999,6 +1012,7 @@ async function impAplica(id, sgOver) {
   if (sg.acao === 'ignorar') return marca('ignorado', {motivo: sg.motivo || 'Ignorado'});
   if (sg.acao === 'jaLigado') return marca('vinculado', {lancId: sg.id});
   if (sg.acao === 'vincularPg') return marca('vinculado', {lancId: 'pagamento:' + sg.pid});
+  if (sg.acao === 'vincularGrupo') { for (const it of sg.its) { const old = S.lanc.get(it.id); if (old) await put('lancamentos', it.id, {...old, pluggyIds: [...new Set([...(old.pluggyIds || []), imp.pluggyId])]}); } return marca('vinculado', {lancId: sg.its.map(it => it.id).join(',')}); }
   if (sg.acao === 'vincular' || sg.acao === 'quitar') {
     const it = sg.it; let lid = it.id, ok;
     const extra = sg.acao === 'quitar' ? {valor: imp.valor, data: imp.data, editado: true, ...(Math.abs((Number(it.valor) || 0) - imp.valor) > 0.004 ? {obs: `${it.obs ? it.obs + ' ' : ''}Previsto ${fmt(it.valor)}; banco ${fmt(imp.valor)}.`} : {})} : {};
@@ -1023,6 +1037,7 @@ function vBanco() {
     if (sg.acao === 'jaLigado') return `Já lançado no app.`;
     if (sg.acao === 'ignorar') return `Ignorar: ${esc(sg.motivo)}`;
     if (sg.acao === 'vincularPg') return `Já está no app: ${sg.txt}.`;
+    if (sg.acao === 'vincularGrupo') return `Já está no app, somando: <b>${esc(sg.txt)}</b>.`;
     if (sg.acao === 'vincular') return `Já está no app: <b>${esc(sg.it.descricao)}</b> (${dm(sg.it.data)}).`;
     if (sg.acao === 'quitar') return `Quita o previsto <b>${esc(sg.it.descricao)}</b> (${fmt(sg.it.valor)}${Math.abs(sg.it.valor - imp.valor) > 0.004 ? ` → ${fmt(imp.valor)}` : ''}).`;
     return `Lançar como <b>${esc(catNome(sg.cat))}</b>${sg.forn ? ` · ${esc(sg.forn)}` : ''}${imp.cartao ? ` · fatura de ${ymLong(competenciaCartao(cardById(imp.meio) || {}, imp.data))}` : ''}.`;
@@ -1270,8 +1285,8 @@ function vInicio() {
         <div class="in-kpi"><span>Caixinhas</span><b>${fmt(cxHoje)}</b></div>
       </div>
       ${tit === 'casal' ? `<div class="in-split">${ids.map(t => { const Pt = ponte(ym, t); return Pt ? `<span>${esc(titNome(t))}: <b>${fmt(Pt.hoje)}</b> → ${fmt(Pt.fim)}</span>` : ''; }).join('')}</div>` : ''}
-      ${(() => { const cs = [...S.pgContas.values()].filter(c => c.tipo === 'BANK' && c.meio === 'conta' && ids.includes(c.titular)); if (!cs.length) return ''; const b = round2(cs.reduce((a, c) => a + Number(c.saldo || 0), 0)), dif = round2(b - P.hoje), at = S.pgCfg.status?.ultimaSync;
-        return `<div class="in-split" style="margin-top:12px"><span>No banco${at ? ` (${new Date(at).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})})` : ''}: <b>${fmt(b)}</b> ${Math.abs(dif) < 0.011 ? '<span class="pos">· confere</span>' : `<span class="warn">· diferença ${fmtS(dif)}</span>`}</span></div>`; })()}
+      ${(() => { const cs = [...S.pgContas.values()].filter(c => c.tipo === 'BANK' && c.meio === 'conta' && ids.includes(c.titular)); if (!cs.length) return ''; const tsB = [...new Set(cs.map(c => c.titular))], appH = round2(tsB.reduce((a, t) => a + (ponte(ym, t)?.hoje || 0), 0)), b = round2(cs.reduce((a, c) => a + Number(c.saldo || 0), 0)), dif = round2(b - appH), at = S.pgCfg.status?.ultimaSync;
+        return `<div class="in-split" style="margin-top:12px"><span>${tit === 'casal' ? `Banco (${tsB.map(titNome).map(esc).join(', ')})` : 'No banco'}${at ? ` (${new Date(at).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})})` : ''}: <b>${fmt(b)}</b> ${Math.abs(dif) < 0.011 ? '<span class="pos">· confere</span>' : `<span class="warn">· diferença ${fmtS(dif)}</span>`}</span></div>`; })()}
       ${P.cur && tit !== 'casal' ? `<div style="margin-top:12px"><button class="btn sm" data-act="conciliar">Conferir com o banco</button></div>` : ''}
     </section>
     ${(() => { const n = impLista().filter(x => x.sg.acao !== 'semConta' && ids.includes(x.imp.titular)).length; return n ? `<button class="in-alert" data-act="nav" data-v="banco" style="text-align:left;border:0;cursor:pointer;font:inherit;color:var(--ink)"><b>${n} ${n > 1 ? 'transações' : 'transação'} do banco para conferir</b><br><span class="muted" style="font-size:12.5px">Vieram pelo Open Finance. Toque para confirmar ou lançar.</span></button>` : ''; })()}
