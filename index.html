@@ -979,6 +979,10 @@ function impSugestao(imp, usados) {
   }
   cand.sort((a, b) => a.sc - b.sc);
   if (cand.length) return {acao: cand[0].tipo, it: cand[0].it};
+  // compra estornada (cobrança + estorno se anulam) e caixinha do Nubank sem caixinha no app
+  const ehEst = o => /estorno/.test(norm(o.descricao));
+  if ([...S.imps.values()].some(o => o !== imp && o.accountId === imp.accountId && o.tipo !== imp.tipo && Math.abs(o.valor - imp.valor) < 0.011 && Math.abs(diasEntre(o.data, imp.data)) <= 5 && (ehEst(o) || ehEst(imp)))) return {acao: 'ignorar', motivo: 'Compra estornada: cobrança e estorno se anulam.'};
+  if (/aplicacao rdb|resgate rdb|\brdb\b/.test(d)) return {acao: 'ignorar', motivo: 'Movimento de caixinha do Nubank sem caixinha correspondente no app.'};
   // novo lançamento: regras do usuário, depois histórico pelo nome
   const rg = (C().regras || []).find(g => g.contem && d.includes(norm(g.contem)));
   let cat = rg?.categoria || null, forn = rg?.fornecedor || imp.estabelecimento || null, nat = rg?.natureza || null;
