@@ -1164,15 +1164,32 @@ function cxNoFim(x, m) { // saldo da caixinha no fim do mês m
   const ini = (x.c.saldoInicialData || '').slice(0, 7); if (ini && m < ini) return null;
   let v = Number(x.c.saldoInicial) || 0; for (const mv of x.s.movs) if (mv.it.status === 'realizado' && (mv.it.data || mv.ym).slice(0, 7) <= m) v += mv.ef; return round2(v);
 }
+/* endividamento: passivos (fora do fluxo + no fluxo) ÷ ativos (caixa + reservas e caixinhas) */
+const CAT_DIV_FLUXO = new Set(['emprestimos', 'financ-moto', 'parcelamento-fatura', 'compras-parceladas']);
+function endividamento(tit) {
+  const ids = idsDe(tit), E = engine(), pj = pjId();
+  const vis = d => d.status !== 'quitada' && (ids.includes(d.titular) || (ids.includes('nycolas') && d.titular === pj));
+  let nc = 0, vc = 0, d30 = 0, ncN = 0;
+  // fora do fluxo: dívidas cadastradas (Serasa, SPC, atrasadas...). As marcadas "noFluxo" já estão nos lançamentos e entram abaixo.
+  for (const d of S.divs.values()) if (vis(d) && !d.noFluxo) { const c = divCalc(d); nc += c.av + c.vc; vc += c.vc; d30 += c.d30; ncN++; }
+  // no fluxo: limite usado dos cartões (fatura aberta + parcelas futuras) e parcelas previstas de empréstimos, financiamentos e parcelados na conta
+  let cart = 0; for (const c of C().cartoes) if (c.ativo !== false && ids.includes(c.titular) && ['credito', 'crediario'].includes(c.tipo || 'credito') && c.limite) cart += Math.max(0, limiteCartao(c).usado || 0);
+  let parc = 0; const ate = ymAdd(HOJE_YM, 24);
+  for (let m = HOJE_YM; m <= ate; m = ymAdd(m, 1)) for (const it of (E.byMonth.get(m) || [])) if (ids.includes(it.titular) && it.tipo === 'saida' && it.status === 'previsto' && CAT_DIV_FLUXO.has(it.categoria) && (!it.meio || it.meio === 'conta')) parc += Number(it.valor) || 0;
+  for (const r of S.recs.values()) if (r.ativo !== false && ids.includes(r.titular) && r.tipo === 'saida' && CAT_DIV_FLUXO.has(r.categoria) && r.fim && r.fim > ate && (!r.meio || r.meio === 'conta'))
+    for (let m = ymAdd(ate, 1); m <= r.fim; m = ymAdd(m, 1)) if (recNoMes(r, m)) parc += recValor(r, m);
+  const caixa = ids.filter(t => t !== pj).reduce((a, t) => a + Math.max(0, ponte(HOJE_YM, t)?.hoje || 0), 0);
+  const res = [...S.cxs].filter(([, c]) => c.ativa !== false && ids.includes(c.titular)).reduce((a, [id]) => a + Math.max(0, cxSerie(id)?.hoje || 0), 0);
+  const corr = round2(cart + parc), tot = round2(nc + corr), at = round2(caixa + res);
+  return {nc: round2(nc), vc: round2(vc), d30: round2(d30), ncN, cart: round2(cart), parc: round2(parc), corr, tot, caixa: round2(caixa), res: round2(res), at, ratio: at > 0.01 ? tot / at : null};
+}
+function endivSt(EV, st) { const r = EV.ratio; return r == null ? st('cr', 'sem ativos') : r <= 0.5 ? st('ok', 'saudável') : r <= 1 ? st('at', 'atenção') : st('cr', 'passivo > ativos'); }
 function saudeHTML(tit, ids, cxs, E) {
   const ym = HOJE_YM, W = chartW(), isPJ = tit === pjId();
   // indicadores
   const r0 = resumoMes(ym, tit);
-  // dívidas: pelo inventário cadastrado (inclui o que não aparece nos bancos), não pelos lançamentos
-  const dVis = d => d.status !== 'quitada' && (tit === 'casal' || ids.includes(d.titular) || (tit === 'nycolas' && d.titular === 'pj'));
-  let dTot = 0, dVc = 0, d30 = 0, dN = 0; for (const d of S.divs.values()) if (dVis(d)) { const c = divCalc(d); dTot += c.av + c.vc; dVc += c.vc; d30 += c.d30; dN++; }
-  const rendas = [0, 1, 2, 3].map(k => resumoMes(ymAdd(ym, -k), tit).e).filter(v => v > 0), rendaMed = rendas.length ? rendas.reduce((a, b) => a + b, 0) / rendas.length : 0;
-  const mRenda = rendaMed > 0 ? dTot / rendaMed : 0, pVc = dTot > 0 ? dVc / dTot * 100 : 0;
+  // endividamento total = fora do fluxo (inventário de dívidas) + no fluxo (cartões e parcelas já comprometidas), contra caixa + reservas
+  const EV = endividamento(tit), pVc = EV.tot > 0 ? EV.vc / EV.tot * 100 : 0;
   const ant = [1, 2, 3].map(k => resumoMes(ymAdd(ym, -k), tit).s).filter(v => v > 0), despMed = ant.length ? ant.reduce((a, b) => a + b, 0) / ant.length : r0.s;
   const res = cxs.filter(x => x.c.tipo === 'reserva').reduce((a, x) => a + x.s.hoje, 0), meses = despMed > 0 ? res / despMed : 0;
   const mi = isPJ ? null : metaInv(ym, tit);
@@ -1182,10 +1199,11 @@ function saudeHTML(tit, ids, cxs, E) {
   if (mi && mi.ent > 0) tiles.push(`<div class="in-ht"><span>Guardado</span><b>${nf(mi.pct, 0)}%</b>${mi.pct >= mi.meta ? st('ok', 'na meta') : mi.pct >= mi.meta / 2 ? st('at', 'abaixo') : st('cr', 'baixo')}<small>meta: ${mi.meta}%</small></div>`);
   tiles.push(`<div class="in-ht"><span>Reserva cobre</span><b>${nf(meses, 1)} ${meses >= 1.95 || meses < 0.05 ? 'meses' : 'mês'}</b>${meses >= 6 ? st('ok', 'saudável') : meses >= 3 ? st('at', 'em construção') : st('cr', 'frágil')}<small>ideal: 6 meses</small></div>`);
   const fmtMil = v => v >= 1000 ? 'R$ ' + nf(v / 1000, 1) + ' mil' : fmt(v);
-  if (!dN) tiles.push(`<div class="in-ht"><span>Dívidas cadastradas</span><b>R$ 0</b>${st('ok', 'sem dívidas')}<small>nenhuma em aberto</small></div>`);
+  if (EV.tot < 0.01) tiles.push(`<div class="in-ht"><span>Endividamento</span><b>R$ 0</b>${st('ok', 'sem dívidas')}<small>nada em aberto</small></div>`);
   else {
-    tiles.push(`<div class="in-ht"><span><a href="#" data-act="nav" data-v="dividas">Dívidas cadastradas</a></span><b>${fmtMil(dTot)}</b>${mRenda <= 3 ? st('ok', 'leve') : mRenda <= 12 ? st('at', 'atenção') : st('cr', 'pesado')}<small>${rendaMed > 0 ? `${nf(mRenda, 1)} meses de renda · ` : ''}${dN} credor${dN > 1 ? 'es' : ''}</small></div>`);
-    tiles.push(`<div class="in-ht"><span>Em atraso</span><b>${fmtMil(dVc)}</b>${dVc < 0.01 ? st('ok', 'em dia') : pVc <= 25 ? st('at', 'atenção') : st('cr', 'crítico')}<small>${nf(pVc, 0)}% do total${d30 > 0 ? ` · ${fmt(d30)} vence em 30d` : ''}</small></div>`);
+    tiles.push(`<div class="in-ht"><span><a href="#" data-act="nav" data-v="dividas">Endividamento total</a></span><b>${fmtMil(EV.tot)}</b>${endivSt(EV, st)}<small>fora do fluxo ${fmtMil(EV.nc)} · no fluxo ${fmtMil(EV.corr)}</small></div>`);
+    tiles.push(`<div class="in-ht"><span>Dívida ÷ ativos</span><b>${EV.ratio == null ? 'sem ativos' : nf(EV.ratio, EV.ratio < 10 ? 1 : 0) + '×'}</b>${endivSt(EV, st)}<small>ativos ${fmt(EV.at)} (caixa ${fmtMil(EV.caixa)} + reservas ${fmtMil(EV.res)})</small></div>`);
+    if (EV.vc > 0.01) tiles.push(`<div class="in-ht"><span>Em atraso</span><b>${fmtMil(EV.vc)}</b>${pVc <= 25 ? st('at', 'atenção') : st('cr', 'crítico')}<small>${nf(pVc, 0)}% do total · Serasa/SPC${EV.d30 > 0 ? ` · ${fmtMil(EV.d30)} vence em 30d` : ''}</small></div>`);
   }
   // patrimônio: conta + caixinhas, 5 meses para trás e 6 para frente
   const meses12 = []; for (let k = -5; k <= 6; k++) meses12.push(ymAdd(ym, k));
@@ -2137,7 +2155,7 @@ function vDividas() {
     const c = divCalc(d), open = S.divOpen.has(id), temItens = Array.isArray(d.itens) && d.itens.length;
     const head = `<tr class="${d.status === 'quitada' ? 'is-prev' : ''} div-row">
       <td class="r num hide-sm">${d.prioridade ?? '–'}</td>
-      <td>${temItens ? `<button class="div-tg" data-act="divToggle" data-id="${esc(id)}" aria-expanded="${open}" aria-label="Ver composição">${open ? '▾' : '▸'}</button>` : '<span class="div-tg-sp"></span>'}<b style="font-weight:500">${esc(d.credor)}</b>${d.status === 'quitada' ? ' <span class="chip ok">quitada</span>' : ''}${d.obs ? `<br><small class="muted div-obs">${esc(d.obs)}</small>` : ''}</td>
+      <td>${temItens ? `<button class="div-tg" data-act="divToggle" data-id="${esc(id)}" aria-expanded="${open}" aria-label="Ver composição">${open ? '▾' : '▸'}</button>` : '<span class="div-tg-sp"></span>'}<b style="font-weight:500">${esc(d.credor)}</b>${d.status === 'quitada' ? ' <span class="chip ok">quitada</span>' : d.noFluxo ? ' <span class="chip acc">no fluxo</span>' : ''}${d.obs ? `<br><small class="muted div-obs">${esc(d.obs)}</small>` : ''}</td>
       <td class="muted hide-sm">${esc(d.tipo)}</td><td class="r num hide-sm">${fmt(c.av)}${c.d30 ? `<br><small class="warn">${fmt(c.d30)} em 30d</small>` : ''}</td><td class="r num hide-sm ${c.vc ? 'neg' : ''}">${fmt(c.vc)}</td><td class="r num"><b>${fmt(c.av + c.vc)}</b>${c.vc ? `<small class="show-sm neg">${fmt(c.vc)} vencido</small>` : ''}</td>
       <td class="muted num hide-sm">${d.atualizadoEm ? d.atualizadoEm.split('-').reverse().join('/') : ''}${d.fonte ? `<br><small>${esc(d.fonte)}</small>` : ''}</td>
       <td class="r hide-sm"><button class="btn ghost sm" data-act="editDiv" data-id="${esc(id)}">Editar</button></td></tr>`;
@@ -2147,11 +2165,13 @@ function vDividas() {
       </tbody></table></td></tr>`;
   };
   const grupos = DIV_GRUPOS.map(([g, nome]) => [nome, list.filter(([, d]) => (d.grupo || '') === g || (g === '' && !DIV_GRUPOS.some(x => x[0] && x[0] === d.grupo)))]).filter(([, l]) => l.length);
-  return `<div class="kpis div-kpis" style="margin-bottom:20px">
-      <div class="kpi"><span class="eyebrow">Dívida total</span><span class="v">${fmt(tv + tvc)}</span><span class="s">${at.length} credores em aberto</span></div>
-      <div class="kpi"><span class="eyebrow">Vencido</span><span class="v ${tvc ? 'neg' : ''}">${fmt(tvc)}</span></div>
-      <div class="kpi"><span class="eyebrow">A vencer</span><span class="v">${fmt(tv)}</span></div>
-      <div class="kpi"><span class="eyebrow">Vence em 30 dias</span><span class="v ${t30 ? 'warn' : ''}">${fmt(t30)}</span><span class="s">${prox.length} pagamento${prox.length === 1 ? '' : 's'}</span></div></div>
+  const EV = endividamento(S.tit);
+  return `<div class="kpis div-kpis" style="margin-bottom:8px">
+      <div class="kpi"><span class="eyebrow">Endividamento total</span><span class="v">${fmt(EV.tot)}</span><span class="s">tudo o que se deve hoje</span></div>
+      <div class="kpi"><span class="eyebrow">Fora do fluxo</span><span class="v ${EV.vc ? 'neg' : ''}">${fmt(EV.nc)}</span><span class="s">${fmt(EV.vc)} vencido · Serasa, SPC, atrasos</span></div>
+      <div class="kpi"><span class="eyebrow">No fluxo</span><span class="v">${fmt(EV.corr)}</span><span class="s">cartões ${fmt(EV.cart)} · parcelas ${fmt(EV.parc)}</span></div>
+      <div class="kpi"><span class="eyebrow">Dívida ÷ ativos</span><span class="v ${EV.ratio == null || EV.ratio > 1 ? 'neg' : ''}">${EV.ratio == null ? '–' : EV.ratio.toLocaleString('pt-BR', {maximumFractionDigits: EV.ratio < 10 ? 1 : 0}) + '×'}</span><span class="s">ativos ${fmt(EV.at)}: caixa ${fmt(EV.caixa)} + reservas ${fmt(EV.res)}</span></div></div>
+    <p class="muted" style="font-size:12.5px;margin:0 0 20px;max-width:760px">Fora do fluxo: as dívidas desta lista que ainda não entram no caixa. No fluxo: o limite usado dos cartões (fatura aberta e parcelas futuras) e as parcelas de empréstimos, financiamentos e compras parceladas já previstas. Dívidas marcadas "no fluxo" aparecem na lista, mas contam só uma vez, pelas parcelas.${t30 ? ` Vencem ${fmt(t30)} nos próximos 30 dias.` : ''}</p>
     ${prox.length ? `<div class="panel" style="margin-bottom:20px"><h3 style="margin:0 0 8px">Próximos vencimentos</h3>${prox.map(p => `<div class="row"><div class="t"><b>${esc(p.it.d)}</b><small>${esc(p.credor)} · ${p.it.v.split('-').reverse().join('/')}${p.it.est ? ' · estimativa' : ''}</small></div><span class="num">${fmt(p.it.valor)}</span><span>${divSitChip(p.it)}</span></div>`).join('')}</div>` : ''}
     <div class="panel-head"><p class="muted" style="margin:0">Clique em ▸ para ver o que compõe cada dívida. Itens com data passada viram "vencido" sozinhos; marque como pago quando quitar.</p><button class="btn primary" data-act="newDiv" ${S.readOnly ? 'disabled' : ''}>Nova dívida</button></div>
     ${list.length ? `<div class="tbl-wrap"><table class="div-tbl"><thead><tr><th class="r hide-sm">Prior.</th><th>Credor</th><th class="hide-sm">Tipo</th><th class="r hide-sm">A vencer</th><th class="r hide-sm">Vencido</th><th class="r">Total</th><th class="hide-sm">Atualizada</th><th class="hide-sm"></th></tr></thead><tbody>
@@ -2751,7 +2771,7 @@ async function submitRec() {
 }
 function openDiv(id) {
   const d = id ? S.divs.get(id) : null;
-  S.divForm = {id, credor: d?.credor || '', tipo: d?.tipo || '', aVencer: d ? String(d.aVencer || 0).replace('.', ',') : '', vencidas: d ? String(d.vencidas || 0).replace('.', ',') : '', prioridade: d?.prioridade ?? '', status: d?.status || 'ativa', titular: d?.titular || (S.tit === 'casal' ? 'nycolas' : S.tit), obs: d?.obs || ''};
+  S.divForm = {id, credor: d?.credor || '', tipo: d?.tipo || '', aVencer: d ? String(d.aVencer || 0).replace('.', ',') : '', vencidas: d ? String(d.vencidas || 0).replace('.', ',') : '', prioridade: d?.prioridade ?? '', status: d?.status || 'ativa', titular: d?.titular || (S.tit === 'casal' ? 'nycolas' : S.tit), obs: d?.obs || '', noFluxo: !!d?.noFluxo};
   const D = S.divForm;
   $('#modal').innerHTML = `<div class="scrim" data-act="closeScrim"><form class="sheet" id="div-form" autocomplete="off">
     <div class="sheet-head"><h2>${id ? 'Editar dívida' : 'Nova dívida'}</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
@@ -2760,6 +2780,7 @@ function openDiv(id) {
     <div class="fields2"><div class="field"><label for="dv-p">Prioridade</label><input class="input num" id="dv-p" type="number" min="1" value="${esc(D.prioridade)}" data-d="prioridade"></div><div class="field"><label for="dv-s">Situação</label><select class="input" id="dv-s" data-d="status"><option value="ativa" ${D.status !== 'quitada' ? 'selected' : ''}>Em aberto</option><option value="quitada" ${D.status === 'quitada' ? 'selected' : ''}>Quitada</option></select></div></div>
     <div class="field"><label for="dv-tit">Titular</label><select class="input" id="dv-tit" data-d="titular">${C().titulares.map(t => `<option value="${t.id}" ${t.id === D.titular ? 'selected' : ''}>${esc(t.nome)}</option>`).join('')}</select></div>
     <div class="field"><label for="dv-o">Observação</label><input class="input" id="dv-o" value="${esc(D.obs)}" data-d="obs"></div>
+    <label class="switch"><input type="checkbox" id="dv-fl" data-d="noFluxo" ${D.noFluxo ? 'checked' : ''}>Já está no fluxo de caixa (as parcelas estão lançadas no app)</label>
     <div class="sheet-foot">${id ? '<button type="button" class="btn danger" data-act="askDelDiv">Excluir</button>' : ''}<span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
     <div id="confirm-area"></div></form></div>`;
 }
@@ -2767,7 +2788,7 @@ async function submitDiv() {
   const D = S.divForm; if (!D.credor.trim()) return toast('Informe o credor.');
   const a = parseValor(D.aVencer) || 0, v = parseValor(D.vencidas) || 0;
   const old = D.id ? S.divs.get(D.id) || {} : {}; const calc = Array.isArray(old.itens) && old.itens.length ? divCalc(old) : null;
-  const ok = await put('dividas', D.id || 'dv-' + uid(), {...old, credor: D.credor.trim(), tipo: D.tipo, aVencer: calc ? calc.av : round2(a), vencidas: calc ? calc.vc : round2(v), prioridade: D.prioridade === '' ? null : Number(D.prioridade), status: D.status, titular: D.titular, obs: D.obs, atualizadoEm: HOJE});
+  const ok = await put('dividas', D.id || 'dv-' + uid(), {...old, credor: D.credor.trim(), tipo: D.tipo, aVencer: calc ? calc.av : round2(a), vencidas: calc ? calc.vc : round2(v), prioridade: D.prioridade === '' ? null : Number(D.prioridade), status: D.status, titular: D.titular, obs: D.obs, noFluxo: !!D.noFluxo, atualizadoEm: HOJE});
   if (ok) { closeModal(); toast('Dívida salva.'); }
 }
 function askConfirm(msg, actions) {
@@ -2994,7 +3015,7 @@ document.addEventListener('input', e => {
   if (t.dataset.x && S.cxForm) { S.cxForm[t.dataset.x] = t.type === 'checkbox' ? t.checked : t.value; return; }
   if (t.dataset.rmes && S.recForm) { const n = Number(t.dataset.rmes), s = new Set(S.recForm.meses || []); t.checked ? s.add(n) : s.delete(n); S.recForm.meses = [...s].sort((a, b) => a - b); return; }
   if (t.dataset.r && S.recForm) { const k = t.dataset.r; S.recForm[k] = t.type === 'checkbox' ? t.checked : t.value; if (k === 'titular') S.recForm.meio = 'conta'; if (['titular', 'freq', 'reajMes', 'controle', 'meio', 'rep'].includes(k) || (k === 'parcelas' && S.recForm.freq === 'parcelas') || (k === 'inicio' && S.recForm.freq === 'parcelas')) { drawRec(); const f = document.getElementById(t.id); if (f && f.type !== 'select-one') { f.focus(); } } return; }
-  if (t.dataset.d && S.divForm) { S.divForm[t.dataset.d] = t.value; return; }
+  if (t.dataset.d && S.divForm) { S.divForm[t.dataset.d] = t.type === 'checkbox' ? t.checked : t.value; return; }
   if (t.dataset.fo) { if (t.dataset.fo === 'busca') { S.fornBusca = t.value; clearTimeout(S._ft); S._ft = setTimeout(() => { render(); const b = $('#fo-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); } else if (t.dataset.fo === 'todos') { S.fornTodos = t.checked; render(); } else { S.fornNat = t.value; render(); } return; }
   if (t.dataset.filtro) { S.filtro[t.dataset.filtro] = t.value; if (t.dataset.filtro === 'busca') { clearTimeout(S._bt); S._bt = setTimeout(() => { render(); const b = $('#f-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); } else render(); return; }
   if (S.imp) {
