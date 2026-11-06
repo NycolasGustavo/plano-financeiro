@@ -366,6 +366,14 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .in-mes .val small{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .in-alert{border-radius:14px;padding:12px 14px;background:var(--warn-soft);color:var(--ink);font-size:13.5px}
 .in-alert.neg{background:var(--neg-soft)}
+.in-ab summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--warn-soft);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.in-ab summary::-webkit-details-marker{display:none}
+.in-ab summary span:first-child{display:flex;flex-direction:column;gap:2px}
+.in-ab summary small{font-size:12.5px;color:var(--muted)}
+.in-ab .chev{width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s;flex:none;margin-right:4px}
+.in-ab[open] .chev{transform:rotate(-135deg)}
+.in-card .nx{display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+.in-card .nx span{display:flex;justify-content:space-between;gap:8px}
 /* barra de abas do celular */
 .tabbar{display:none}
 .sheet-scrim{position:fixed;inset:0;background:rgba(20,20,19,.35);z-index:45}
@@ -460,7 +468,7 @@ const CHECK = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke
 const S = {
   db: null, downloads: null, config: null, configLoaded: false,
   lancByYear: {}, lanc: new Map(), recs: new Map(), divs: new Map(), planos: new Map(), ctrl: {}, pagamentos: new Map(), compraItens: new Map(), compraListas: new Map(), compras: new Map(), cxs: new Map(),
-  view: 'inicio', mes: HOJE_YM, maisOpen: false, tit: 'nycolas',
+  view: 'inicio', mes: HOJE_YM, maisOpen: false, inAbOpen: false, tit: 'nycolas',
   filtro: {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''},
   cartaoSel: null, fatMes: null, openGroups: new Set(), imp: null, cache: null, readOnly: false,
 };
@@ -714,7 +722,7 @@ function linhasMes(ym, tit, filtro) { const o = {}; for (const it of itensMes(ym
 // impulso = categoria Impulsos OU lançamento marcado como impulso (mantém a categoria original)
 const isImp = i => i.categoria === 'impulsos' || i.impulso === true;
 // teto de impulsos = soma das recorrências-envelope da categoria no mês
-function tetoImp(ym, t) { let v = 0; for (const r of S.recs.values()) if (r.envelope && r.categoria === 'impulsos' && r.titular === t && r.ativo !== false && r.inicio <= ym && (!r.fim || r.fim >= ym)) v += recValor(r, ym); return round2(v); }
+function tetoImp(ym, t) { let v = 0; for (const [rid, r] of S.recs) if (r.envelope && r.categoria === 'impulsos' && r.titular === t && r.ativo !== false && r.inicio <= ym && (!r.fim || r.fim >= ym)) { const sv = [...S.lanc.values()].find(l => l.recorrencia === rid && l.competencia === ym); if (sv?.status === 'pulado') continue; v += recValor(r, ym); } return round2(v); } // teto retirado no mês (ocorrência pulada) = sem teto
 function gastoImp(ym, t) { const E = engine(); return round2([...(E.byMonth.get(ym) || []), ...(E.byMonth.get(ymAdd(ym, 1)) || []), ...(E.byMonth.get(ymAdd(ym, -1)) || [])].filter(i => i.titular === t && isImp(i) && i.status === 'realizado' && (i.data || i.competencia + '-01').startsWith(ym)).reduce((s, i) => s + (i.tipo === 'saida' ? i.valor : -i.valor), 0)); } // pela data da compra, mesmo no cartão
 function tetoHTML(ym, tit) {
   const ts = idsDe(tit).filter(t => tetoImp(ym, t) > 0); if (!ts.length) return '';
@@ -946,17 +954,18 @@ function vInicio() {
   }
   acoes.sort((a, b) => a.d.localeCompare(b.d));
   const linhaAcao = a => {
-    const late = a.d < HOJE, dd = a.d.slice(8, 10), mm = MES3[Number(a.d.slice(5, 7)) - 1];
+    const late = a.d < HOJE, dd = a.d.slice(8, 10), mm = MES3[Number(a.d.slice(5, 7)) - 1]; // 'late' = data já passou e ainda não foi confirmado
     if (a.fat) { const f = a.fat;
       return `<div class="in-it"><span class="in-dt fat ${late ? 'late' : ''}"><b>${dd}</b><small>${mm}</small></span>
         <span class="in-tx"><b>Fatura ${esc(f.card.nome)}</b><small>${f.card.descontoSalario ? 'desconto no salário' : late ? 'venceu' : 'vence'} ${dm(a.d)}${f.pago > 0.004 ? ` · já pago ${fmt(f.pago)}` : ''}${tit === 'casal' ? ' · ' + esc(titNome(f.card.titular)) : ''}</small></span>
         <span class="in-v"><span class="num neg">−${fmt(f.falta)}</span></span></div>`; }
     const it = a.it, ent = it.tipo === 'entrada';
-    return `<div class="in-it"><span class="in-dt ${late ? 'late' : ''}"><b>${dd}</b><small>${late ? 'atraso' : mm}</small></span>
-      <span class="in-tx" data-act="edit" data-id="${esc(it.id)}" style="cursor:pointer"><b>${esc(it.descricao)}</b><small>${late ? `previsto para ${dm(a.d)} · ` : ''}${esc(catNome(it.categoria))}${tit === 'casal' ? ' · ' + esc(titNome(it.titular)) : ''}${it.consumido ? ` · restam ${fmt(it.valor)} de ${fmt(it.valorOriginal)}` : ''}</small></span>
+    return `<div class="in-it"><span class="in-dt ${late ? 'late' : ''}"><b>${dd}</b><small>${mm}</small></span>
+      <span class="in-tx" data-act="edit" data-id="${esc(it.id)}" style="cursor:pointer"><b>${esc(it.descricao)}</b><small>${esc(catNome(it.categoria))}${tit === 'casal' ? ' · ' + esc(titNome(it.titular)) : ''}${it.consumido ? ` · restam ${fmt(it.valor)} de ${fmt(it.valorOriginal)}` : ''}</small></span>
       <span class="in-v"><span class="num ${ent ? 'pos' : ''}">${ent ? '+' : '−'}${fmt(it.valor)}</span>${S.readOnly ? '' : `<button class="check" data-act="toggle" data-id="${esc(it.id)}" title="Marcar como feito" aria-label="Marcar ${esc(it.descricao)} como feito"></button>`}</span></div>`;
   };
-  const atrasos = acoes.filter(a => a.d < HOJE).length;
+  const abertos = acoes.filter(a => a.d < HOJE), proximos = acoes.filter(a => a.d >= HOJE);
+  const totAb = round2(abertos.reduce((s, a) => s + (a.fat ? -a.fat.falta : a.it.tipo === 'entrada' ? a.it.valor : -a.it.valor), 0));
   // cartões e vouchers
   const cards = C().cartoes.filter(c => c.ativo !== false && ids.includes(c.titular) && c.tipo !== 'terceiro' && (c.limite || c.tipo === 'beneficio'));
   const cardTile = c => {
@@ -965,6 +974,18 @@ function vInicio() {
       return `<button class="in-card vou" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b><span class="chip">voucher</span></span>
         <span class="eyebrow">Saldo disponível</span><span class="v">${fmt(L.livre)}</span>
         <div class="lim-meter"><b style="width:${pct}%;background:var(--pos)"></b></div><small>${fmt(L.usado)} usados de ${fmt(L.limite)} em ${mesN}${L.livreProj < L.livre - 0.004 ? ` · previsto sobrar ${fmt(L.livreProj)}` : ''}</small></button>`; }
+    const semItens = L.usado < 0.004 && L.ab.real < 0.004 && L.proj < 0.004 && L.fechada.falta < 0.004;
+    if (semItens && c.tipo === 'crediario') { // cobranças lançadas como pagamentos na conta (ex.: Shopee)
+      const chave = norm(c.fornecedor || c.nome.split(/[ (]/)[0]), cob = [];
+      for (let k = 0; k < 18; k++) { const m = ymAdd(ym, k); for (const it of itensMes(m, c.titular)) if (it.status === 'previsto' && it.tipo === 'saida' && it.valor > 0.004 && (it.meio === 'conta' || !it.meio) && (norm(it.fornecedor).includes(chave) || norm(it.descricao).includes(chave))) cob.push(it); }
+      if (cob.length) { cob.sort((a, b) => (a.data || '').localeCompare(b.data || '')); const tot = round2(cob.reduce((s, i) => s + i.valor, 0)), inf = c.usadoInformado;
+        const usado = inf ? Number(inf.valor) : tot, pct = c.limite ? Math.min(100, usado / c.limite * 100) : 0;
+        return `<button class="in-card" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b>${tit === 'casal' ? `<span class="chip">${esc(titNome(c.titular))}</span>` : ''}</span>
+          <span class="eyebrow">Próxima cobrança · ${dm(cob[0].data)}</span><span class="v">${fmt(cob[0].valor)}</span>
+          <div class="nx">${cob.slice(1, 3).map(i => `<span><span class="muted">${dm(i.data)} · ${esc(i.descricao.replace(/^Shopee\s*[—-]\s*/, ''))}</span><b class="num">${fmt(i.valor)}</b></span>`).join('')}</div>
+          <div class="lim-meter"><b style="width:${pct}%;background:var(--accent)"></b></div>
+          <small>${inf ? `Limite usado ${fmt(usado)} de ${fmt(c.limite)} (informado em ${dm(inf.data)})` : `${fmt(tot)} em cobranças previstas · cerca de ${fmt(Math.max(0, c.limite - tot))} livres de ${fmt(c.limite)}`}</small></button>`; }
+    }
     const fech = L.fechada.falta > 0.004, over = L.livre < -0.004, pct = L.limite ? Math.min(100, L.usado / L.limite * 100) : 0, pctP = L.limite ? Math.min(100, L.proj / L.limite * 100) : 0;
     const cor = pctP >= 100 ? 'var(--neg)' : pctP >= 80 ? 'var(--warn)' : 'var(--accent)';
     return `<button class="in-card ${over ? 'over' : ''}" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b>${tit === 'casal' ? `<span class="chip">${esc(titNome(c.titular))}</span>` : ''}</span>
@@ -1000,8 +1021,10 @@ function vInicio() {
     </section>
     ${negM ? `<div class="in-alert neg">O saldo projetado fica negativo em ${ymLong(negM.m)} (${fmt(negM.fim)}). Vale rever antes de gastar.</div>` : ''}
     <section class="in-sec"><div class="in-sec-h"><h2>Próximos 15 dias</h2><button class="btn ghost sm" data-act="inicioMes" data-m="${ym}">Ver o mês</button></div>
-      ${atrasos ? `<div class="in-alert">${atrasos} ${atrasos > 1 ? 'itens previstos já passaram da data' : 'item previsto já passou da data'}. Marque como feito ou ajuste a data para o saldo ficar certo.</div>` : ''}
-      <div class="in-list">${acoes.length ? acoes.slice(0, 12).map(linhaAcao).join('') + (acoes.length > 12 ? `<div class="in-empty"><button class="btn ghost sm" data-act="nav" data-v="lanc">Ver mais ${acoes.length - 12}</button></div>` : '') : '<div class="in-empty">Nada a pagar ou receber nos próximos 15 dias.</div>'}</div></section>
+      <div class="in-list">${proximos.length ? proximos.slice(0, 12).map(linhaAcao).join('') + (proximos.length > 12 ? `<div class="in-empty"><button class="btn ghost sm" data-act="nav" data-v="lanc">Ver mais ${proximos.length - 12}</button></div>` : '') : '<div class="in-empty">Nada a pagar ou receber nos próximos 15 dias.</div>'}</div></section>
+    ${abertos.length ? `<section class="in-sec"><details class="in-ab" ${S.inAbOpen ? 'open' : ''}><summary><span><b>Ainda em aberto em ${mesN}</b><small>${abertos.length} ${abertos.length > 1 ? 'itens com data já passada, sem confirmação' : 'item com data já passada, sem confirmação'} · ${fmtS(totAb)}</small></span><span class="chev" aria-hidden="true"></span></summary>
+      <p class="muted" style="font-size:12.5px;margin:0 2px 8px">Já pagou ou recebeu? Marque como feito. Se ainda vai acontecer, abra e ajuste a data. Esses valores continuam contando na projeção do mês.</p>
+      <div class="in-list">${abertos.map(linhaAcao).join('')}</div></details></section>` : ''}
     ${cards.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Cartões e vouchers</h2><button class="btn ghost sm" data-act="nav" data-v="cartoes">Detalhes</button></div>
       <div class="in-scroll">${cards.map(cardTile).join('')}</div></section>` : ''}
     ${cxs.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Reservas e caixinhas</h2><button class="btn ghost sm" data-act="nav" data-v="caixinhas">Abrir</button></div>
@@ -2464,6 +2487,7 @@ async function exportar() {
   catch (e) { if (e?.code !== 'declined') toast('Não foi possível exportar agora.'); }
 }
 
+document.addEventListener('toggle', e => { if (e.target.classList?.contains('in-ab')) S.inAbOpen = e.target.open; }, true);
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act;
