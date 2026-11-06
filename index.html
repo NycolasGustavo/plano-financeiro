@@ -929,6 +929,7 @@ function renderTabbar() {
     ${VIEWS.filter(([k]) => !['inicio', 'lanc', 'cartoes'].includes(k)).map(([k, n]) => `<button class="nav-btn" data-act="nav" data-v="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${svgI(k)}${n}</button>`).join('')}</div>
     ${S.user ? `<div class="who">${esc(S.user.email)} · <a href="#" data-act="sair">sair</a></div>` : ''}</div>` : '';
 }
+const ORC_CATS = new Set(['mercado', 'mercado-np', 'lanches', 'marmitas']);
 const dm = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
 function isoAdd(iso, d) { const t = new Date(iso + 'T12:00:00'); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); }
 function vInicio() {
@@ -941,11 +942,12 @@ function vInicio() {
   const cxs = [...S.cxs].filter(([, c]) => c.ativa !== false && (tit === 'casal' ? ids.includes(c.titular) : c.titular === tit)).map(([id, c]) => ({id, c, s: cxSerie(id)}));
   const cxHoje = round2(cxs.reduce((a, x) => a + x.s.hoje, 0));
   // próximos 15 dias: tudo o que é ação (contas, Pix, transferências, faturas pelo total)
-  const lim = isoAdd(HOJE, 15), acoes = [];
+  const lim = isoAdd(HOJE, 15), acoes = [], orcs = [];
   for (const m of [ym, ymAdd(ym, 1)]) {
     for (const it of itensMes(m, tit)) {
       if (it.status !== 'previsto' || !(it.valor > 0.004) || it.meio === 'caixinha' || it.envelope || fc.cardIds.has(it.meio)) continue;
       const d = it.data || m + '-01'; if (d > lim || (m > ym && d < HOJE)) continue;
+      if (m === ym && ORC_CATS.has(it.categoria) && (it.meio === 'conta' || !it.meio)) { orcs.push(it); continue; } // orçamento do mês (ex.: mercado no débito), não é conta com vencimento
       acoes.push({d, it});
     }
     if (m > ym && lim.slice(0, 7) < m) continue;
@@ -994,8 +996,10 @@ function vInicio() {
       <div class="lim-meter"><i style="width:${pctP}%;background:${cor}"></i><b style="width:${pct}%;background:${cor}"></b></div>
       <small>${over ? `<span class="neg">Acima do limite em ${fmt(-L.livre)}</span>` : `Livre ${fmt(L.livre)} de ${fmt(L.limite)}`}${fech ? ` · próxima ${fmt(L.ab.real)}${L.ab.prev > 0.004 ? ` + ${fmt(L.ab.prev)} previstos` : ''}` : L.ab.prev > 0.004 ? ` · + ${fmt(L.ab.prev)} previstos` : ''}</small></button>`;
   };
-  // metas: teto de impulsos, investimento e metas das caixinhas
+  // metas: orçamentos do mês, teto de impulsos, investimento e metas das caixinhas
   const metas = [];
+  for (const it of orcs) { const tot = Number(it.valorOriginal) || it.valor, usado = round2(tot - it.valor), pct = tot ? usado / tot * 100 : 0, c = pct >= 100 ? 'neg' : pct >= 80 ? 'warn' : 'accent';
+    metas.push(`<div class="in-meta"><b>${esc(it.descricao)}${ids.length > 1 ? ' · ' + esc(titNome(it.titular)) : ''}</b><span class="num">restam ${fmt(it.valor)}</span><div class="lim-meter"><b style="width:${Math.min(100, pct)}%;background:var(--${c})"></b></div><small>${fmt(usado)} usados de ${fmt(tot)} em ${mesN}. Lance as compras para ir abatendo.</small></div>`); }
   for (const t of ids) { const T = tetoImp(ym, t); if (!T) continue; const g = gastoImp(ym, t), pct = g / T * 100, c = pct >= 100 ? 'neg' : pct >= 80 ? 'warn' : 'pos';
     metas.push(`<div class="in-meta"><b>Teto de impulsos${ids.length > 1 ? ' · ' + esc(titNome(t)) : ''}</b><span class="num ${c}">${fmt(g)} de ${fmt(T)}</span><div class="lim-meter"><b style="width:${Math.min(100, pct)}%;background:var(--${c})"></b></div><small>${pct >= 100 ? `Estourou em ${fmt(g - T)}.` : `Ainda pode ${fmt(T - g)} em ${mesN}.`}</small></div>`); }
   if (!isPJ) { const mi = metaInv(ym, tit); if (mi.ent > 0) metas.push(`<div class="in-meta"><b>Guardar ${mi.meta}% da renda</b><span class="num ${mi.pct >= mi.meta ? 'pos' : 'warn'}">${mi.pct.toLocaleString('pt-BR', {maximumFractionDigits: 1})}%</span><div class="lim-meter"><b style="width:${Math.min(100, mi.pct / mi.meta * 100)}%;background:var(--${mi.pct >= mi.meta ? 'pos' : 'warn'})"></b></div><small>${fmt(mi.inv)} guardados de ${fmt(mi.ent)} de renda em ${mesN}.</small></div>`); }
