@@ -965,7 +965,7 @@ function impSugestao(imp, usados) {
   if (!imp.cartao && imp.tipo === 'saida') { const par = [...S.imps.values()].find(o => o !== imp && !o.cartao && o.tipo === 'entrada' && o.data === imp.data && Math.abs(o.valor - imp.valor) < 0.011 && /adicionad.*credito|pix no credito/.test(norm(o.descricao + ' ' + (o.descricaoBanco || ''))));
     if (par) return {acao: 'ignorar', motivo: 'Pix no crédito: o gasto real está na fatura do cartão.'}; }
   // pagamento de fatura de cartão (fica em "pagamentos")
-  if (!imp.cartao && imp.tipo === 'saida') { const pg = [...S.pagamentos.entries()].find(([pid, p]) => !usados.has('pg:' + pid) && Math.abs(Number(p.valor) - imp.valor) < 0.011 && Math.abs(diasEntre(p.data, imp.data)) <= 4);
+  if (!imp.cartao && imp.tipo === 'saida') { const pg = [...S.pagamentos.entries()].find(([pid, p]) => !usados.has('pg:' + pid) && (cardById(p.cartao)?.titular || imp.titular) === imp.titular && cardById(p.cartao)?.tipo !== 'crediario' && Math.abs(Number(p.valor) - imp.valor) < 0.011 && Math.abs(diasEntre(p.data, imp.data)) <= 4);
     if (pg) return {acao: 'vincularPg', pid: pg[0], txt: `Pagamento da fatura ${esc(cardById(pg[1].cartao)?.nome || pg[1].cartao)} (${dm(pg[1].data)})`}; }
   const E = engine(), m0 = imp.data.slice(0, 7), cand = [];
   for (const m of [ymAdd(m0, -1), m0, ymAdd(m0, 1)]) for (const it of (E.byMonth.get(m) || [])) {
