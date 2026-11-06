@@ -299,6 +299,101 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
   .fat-strip{grid-template-columns:repeat(6,minmax(0,1fr))}
   .fat-strip button:nth-child(n+7){display:none}
 }
+
+/* ============ início (tela de acompanhamento, pensada para o celular) ============ */
+.in{display:flex;flex-direction:column;gap:18px;max-width:760px;margin:0 auto}
+.in-hero{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 20px 16px;box-shadow:var(--shadow)}
+.in-hero .eyebrow{display:block}
+.in-hero .big{font-family:var(--f-display);font-size:40px;line-height:1.1;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0 2px;white-space:nowrap}
+.in-proj{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.in-proj b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.in-proj b.neg{color:var(--neg)}
+.in-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.in-kpi{background:var(--sunken);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.in-kpi span{font-size:11.5px;color:var(--muted)}
+.in-kpi b{font-variant-numeric:tabular-nums;font-size:clamp(12px,3.5vw,15.5px);font-weight:600;white-space:nowrap;letter-spacing:-.01em}
+.in-split{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.in-split b{color:var(--ink);font-variant-numeric:tabular-nums}
+.in-sec{display:flex;flex-direction:column;gap:10px}
+.in-sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px}
+.in-sec-h h2{font-size:19px}
+.in-sec-h .btn{flex:none}
+.in-list{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.in-it{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.in-it:first-child{border-top:0}
+.in-dt{display:flex;flex-direction:column;align-items:center;justify-content:center;width:48px;height:48px;border-radius:12px;background:var(--sunken);line-height:1.05}
+.in-dt b{font-size:17px;font-variant-numeric:tabular-nums}
+.in-dt small{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.in-dt.late{background:var(--warn-soft)} .in-dt.late small{color:var(--warn)}
+.in-dt.fat{background:var(--accent-soft)}
+.in-tx{min-width:0;display:flex;flex-direction:column;gap:1px}
+.in-tx b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.in-tx small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.in-v{display:flex;align-items:center;gap:10px}
+.in-v .num{font-weight:600}
+.in-v .check{flex:none}
+.in-empty{padding:18px;color:var(--muted);text-align:center;font-size:13.5px}
+.in-scroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 6px;margin:0 -2px;scrollbar-width:none}
+.in-scroll::-webkit-scrollbar{display:none}
+.in-card{flex:0 0 min(78%,280px);scroll-snap-align:start;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.in-card .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.in-card .top b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.in-card .v{font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.in-card small{font-size:12px;color:var(--muted)}
+.in-card .lim-meter{height:8px;border-radius:4px}
+.in-card.vou{background:var(--pos-soft);border-color:transparent}
+.in-card.over{border-color:var(--neg)}
+.in-cx{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 14px;border-top:1px solid var(--line);align-items:center}
+.in-cx:first-child{border-top:0}
+.in-cx .n{display:flex;flex-direction:column;min-width:0}
+.in-cx .n b{font-weight:500}
+.in-cx .n small{font-size:12px;color:var(--muted)}
+.in-cx .r{text-align:right;display:flex;flex-direction:column}
+.in-cx .r b{font-variant-numeric:tabular-nums;font-weight:600}
+.in-cx .r small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.in-cx .lim-meter{grid-column:1/3;height:6px;margin-top:2px}
+.in-meta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 14px;border-top:1px solid var(--line);align-items:center}
+.in-meta:first-child{border-top:0}
+.in-meta .lim-meter{grid-column:1/3;height:8px;border-radius:4px}
+.in-meta small{grid-column:1/3;font-size:12px;color:var(--muted)}
+.in-mes{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;color:var(--ink);font:inherit}
+.in-mes:first-child{border-top:0}
+.in-mes .m{font-weight:600;text-transform:capitalize}
+.in-mes .trk{height:8px;border-radius:4px;background:var(--sunken);position:relative;overflow:hidden}
+.in-mes .trk b{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.in-mes .val{display:flex;flex-direction:column;align-items:flex-end}
+.in-mes .val b{font-variant-numeric:tabular-nums}
+.in-mes .val small{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.in-alert{border-radius:14px;padding:12px 14px;background:var(--warn-soft);color:var(--ink);font-size:13.5px}
+.in-alert.neg{background:var(--neg-soft)}
+/* barra de abas do celular */
+.tabbar{display:none}
+.sheet-scrim{position:fixed;inset:0;background:rgba(20,20,19,.35);z-index:45}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:46;background:var(--surface);border-radius:20px 20px 0 0;padding:10px 12px calc(16px + env(safe-area-inset-bottom,0px));max-height:80vh;overflow:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15)}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+.sheet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}
+.sheet .nav-btn{width:100%;padding:12px 10px;font-size:14.5px;line-height:1.25}
+.sheet .who{font-size:12.5px;color:var(--muted);padding:10px 12px 0;border-top:1px solid var(--line);margin-top:6px}
+@media (max-width:820px){
+  .rail{display:none}
+  .main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .fab{display:none!important}
+  .bar{gap:10px;padding-block:10px 10px;margin-bottom:14px}
+  .bar .seg{width:100%;order:3}.bar .seg button{flex:1;padding:8px 6px}
+  .bar .grow,.bar .bar-sair{display:none}
+  .month h1{font-size:19px;min-width:0;flex:1}
+  .bar .month{flex:1}
+  .tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+  .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;color:var(--muted);font-size:11px;font-weight:500;cursor:pointer;border-radius:10px}
+  .tabbar button svg{width:22px;height:22px}
+  .tabbar button[aria-current="page"]{color:var(--accent)}
+  .tabbar .plus{align-self:center}
+  .tabbar .plus span{width:48px;height:48px;border-radius:16px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 6px 18px rgba(201,100,66,.35);margin-top:-18px}
+  .tabbar .plus svg{width:22px;height:22px}
+  .in-hero .big{font-size:36px}
+  .in-kpis{gap:6px}.in-kpi{padding:9px 8px}
+}
+@media (max-width:380px){.in-hero .big{font-size:31px}.in-it{grid-template-columns:42px minmax(0,1fr) auto;gap:10px}.in-dt{width:42px;height:42px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -312,6 +407,8 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
   </main>
 </div>
 <button class="fab" id="fab" type="button" hidden><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>Lançamento</button>
+<nav class="tabbar" id="tabbar" aria-label="Navegação"></nav>
+<div id="sheet"></div>
 <div id="modal"></div>
 <div id="toast"></div>
 
@@ -340,6 +437,8 @@ const parseValor = s => { if (typeof s === 'number') return s; s = String(s || '
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const ICON = {
+  inicio:'<path d="M3 9.5 10 3.5l7 6V17h-4.5v-4.5h-5V17H3z"/>',
+  mais:'<circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/>',
   painel:'<path d="M3 3h6v8H3zM11 3h6v5h-6zM11 10h6v7h-6zM3 13h6v4H3z"/>',
   lanc:'<path d="M4 5h12M4 10h12M4 15h8"/>',
   orcamento:'<path d="M4 16V9M8 16V5M12 16v-6M16 16V7"/><path d="M3 16.5h14"/>',
@@ -361,11 +460,11 @@ const CHECK = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke
 const S = {
   db: null, downloads: null, config: null, configLoaded: false,
   lancByYear: {}, lanc: new Map(), recs: new Map(), divs: new Map(), planos: new Map(), ctrl: {}, pagamentos: new Map(), compraItens: new Map(), compraListas: new Map(), compras: new Map(), cxs: new Map(),
-  view: 'painel', mes: HOJE_YM, tit: 'nycolas',
+  view: 'inicio', mes: HOJE_YM, maisOpen: false, tit: 'nycolas',
   filtro: {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''},
   cartaoSel: null, fatMes: null, openGroups: new Set(), imp: null, cache: null, readOnly: false,
 };
-try { const v = localStorage.getItem('pf.tit'); if (v) S.tit = v; const w = localStorage.getItem('pf.view'); if (w) S.view = w; } catch (e) {}
+try { const v = localStorage.getItem('pf.tit'); if (v) S.tit = v; const w = localStorage.getItem('pf.view'); if (w && localStorage.getItem('pf.v2')) S.view = w; else localStorage.setItem('pf.v2', '1'); } catch (e) {}
 
 const DEFAULT_CONFIG = {
   titulares: [{id:'nycolas', nome:'Nycolas'}, {id:'grazi', nome:'Grazi'}],
@@ -775,7 +874,7 @@ function startSubs(db) {
 let rafId = 0; function renderSoon() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(render); }
 
 /* ============ render: moldura ============ */
-const VIEWS = [['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Caixinhas e investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['ajustes','Ajustes']];
+const VIEWS = [['inicio','Início'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Caixinhas e investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['ajustes','Ajustes']];
 function renderRail() {
   const rail = $('#rail');
   rail.innerHTML = `<div class="brand"><i>R$</i>Plano Financeiro</div>` +
@@ -784,25 +883,139 @@ function renderRail() {
 }
 function renderBar() {
   const tits = [...C().titulares.map(t => [t.id, t.nome]), ['casal', 'Casal']];
-  const showMonth = !['recs', 'dividas', 'caixinhas', 'importar', 'ajustes'].includes(S.view);
+  const showMonth = !['inicio', 'recs', 'dividas', 'caixinhas', 'importar', 'ajustes'].includes(S.view);
   $('#bar').innerHTML = `
     ${showMonth ? `<div class="month"><button class="icon-btn" data-act="mes" data-d="-1" aria-label="Mês anterior">‹</button><h1>${ymLong(S.mes)}</h1><button class="icon-btn" data-act="mes" data-d="1" aria-label="Próximo mês">›</button>
     ${S.mes !== HOJE_YM ? `<button class="btn ghost sm" data-act="hoje">Hoje</button>` : ''}</div>` : `<h1 style="font-size:24px">${VIEWS.find(v => v[0] === S.view)[1]}</h1>`}
     <div class="grow"></div>
-    <div class="seg" role="group" aria-label="Titular">${tits.map(([id, n]) => `<button data-act="tit" data-t="${id}" aria-pressed="${S.tit === id}">${esc(n)}</button>`).join('')}</div>${S.user ? '<button class="btn ghost sm" data-act="sair" title="Sair da conta">Sair</button>' : ''}`;
+    <div class="seg" role="group" aria-label="Titular">${tits.map(([id, n]) => `<button data-act="tit" data-t="${id}" aria-pressed="${S.tit === id}">${esc(n)}</button>`).join('')}</div>${S.user ? '<button class="btn ghost sm bar-sair" data-act="sair" title="Sair da conta">Sair</button>' : ''}`;
 }
 function render() {
   if (!S.configLoaded) return;
-  renderRail(); renderBar();
+  renderRail(); renderBar(); renderTabbar();
   $('#fab').hidden = !S.db || S.readOnly;
   const v = $('#view');
-  const fn = {painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
+  const fn = {inicio: vInicio, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
   v.innerHTML = fn();
   if (S.view === 'importar') bindDrop();
 }
 function renderNoDb() {
   $('#bar').innerHTML = '';
   $('#view').innerHTML = `<div class="empty"><h3>O banco de dados não está disponível aqui</h3><p>Abra o app pelo claude.ai com sua conta para ver e registrar lançamentos.</p></div>`;
+}
+
+
+/* ============ início: acompanhamento rápido (celular primeiro) ============ */
+function renderTabbar() {
+  const tb = $('#tabbar'); if (!tb) return;
+  const cur = k => S.view === k ? 'aria-current="page"' : '';
+  const naMais = !['inicio', 'lanc', 'cartoes'].includes(S.view);
+  const podeLancar = S.db && !S.readOnly;
+  tb.innerHTML = `<button data-act="nav" data-v="inicio" ${cur('inicio')}>${svgI('inicio')}Início</button>
+    <button data-act="nav" data-v="lanc" ${cur('lanc')}>${svgI('lanc')}Lançamentos</button>
+    <button class="plus" data-act="novoLanc" aria-label="Novo lançamento" ${podeLancar ? '' : 'disabled'}><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg></span></button>
+    <button data-act="nav" data-v="cartoes" ${cur('cartoes')}>${svgI('cartoes')}Cartões</button>
+    <button data-act="mais" ${naMais ? 'aria-current="page"' : ''}>${svgI('mais')}Mais</button>`;
+  const sh = $('#sheet');
+  sh.innerHTML = S.maisOpen ? `<div class="sheet-scrim" data-act="maisFechar"></div><div class="sheet" role="dialog" aria-label="Todas as seções"><div class="grab"></div><div class="sheet-grid">
+    ${VIEWS.filter(([k]) => !['inicio', 'lanc', 'cartoes'].includes(k)).map(([k, n]) => `<button class="nav-btn" data-act="nav" data-v="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${svgI(k)}${n}</button>`).join('')}</div>
+    ${S.user ? `<div class="who">${esc(S.user.email)} · <a href="#" data-act="sair">sair</a></div>` : ''}</div>` : '';
+}
+const dm = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
+function isoAdd(iso, d) { const t = new Date(iso + 'T12:00:00'); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); }
+function vInicio() {
+  if (!S.config && S.lanc.size === 0) return emptyStart();
+  const tit = S.tit, ids = idsDe(tit), E = engine(), fc = E.faturaCaixa, ym = HOJE_YM, mesN = MESES[Number(ym.slice(5)) - 1];
+  const P = ponte(ym, tit);
+  if (!P) return `<div class="in"><div class="in-alert">Defina o saldo inicial em Ajustes para acompanhar o saldo.</div></div>`;
+  const isPJ = tit === pjId();
+  // caixinhas e reservas
+  const cxs = [...S.cxs].filter(([, c]) => c.ativa !== false && (tit === 'casal' ? ids.includes(c.titular) : c.titular === tit)).map(([id, c]) => ({id, c, s: cxSerie(id)}));
+  const cxHoje = round2(cxs.reduce((a, x) => a + x.s.hoje, 0));
+  // próximos 15 dias: tudo o que é ação (contas, Pix, transferências, faturas pelo total)
+  const lim = isoAdd(HOJE, 15), acoes = [];
+  for (const m of [ym, ymAdd(ym, 1)]) {
+    for (const it of itensMes(m, tit)) {
+      if (it.status !== 'previsto' || !(it.valor > 0.004) || it.meio === 'caixinha' || it.envelope || fc.cardIds.has(it.meio)) continue;
+      const d = it.data || m + '-01'; if (d > lim || (m > ym && d < HOJE)) continue;
+      acoes.push({d, it});
+    }
+    if (m > ym && lim.slice(0, 7) < m) continue;
+    const Pm = m === ym ? P : ponte(m, tit);
+    for (const f of (Pm?.faturas || [])) { if (f.falta <= 0.004) continue; const d = vencData(f.card, m); if (d > lim && m > ym) continue; if (m > ym && d < HOJE) continue; acoes.push({d, fat: f, m}); }
+  }
+  acoes.sort((a, b) => a.d.localeCompare(b.d));
+  const linhaAcao = a => {
+    const late = a.d < HOJE, dd = a.d.slice(8, 10), mm = MES3[Number(a.d.slice(5, 7)) - 1];
+    if (a.fat) { const f = a.fat;
+      return `<div class="in-it"><span class="in-dt fat ${late ? 'late' : ''}"><b>${dd}</b><small>${mm}</small></span>
+        <span class="in-tx"><b>Fatura ${esc(f.card.nome)}</b><small>${f.card.descontoSalario ? 'desconto no salário' : late ? 'venceu' : 'vence'} ${dm(a.d)}${f.pago > 0.004 ? ` · já pago ${fmt(f.pago)}` : ''}${tit === 'casal' ? ' · ' + esc(titNome(f.card.titular)) : ''}</small></span>
+        <span class="in-v"><span class="num neg">−${fmt(f.falta)}</span></span></div>`; }
+    const it = a.it, ent = it.tipo === 'entrada';
+    return `<div class="in-it"><span class="in-dt ${late ? 'late' : ''}"><b>${dd}</b><small>${late ? 'atraso' : mm}</small></span>
+      <span class="in-tx" data-act="edit" data-id="${esc(it.id)}" style="cursor:pointer"><b>${esc(it.descricao)}</b><small>${late ? `previsto para ${dm(a.d)} · ` : ''}${esc(catNome(it.categoria))}${tit === 'casal' ? ' · ' + esc(titNome(it.titular)) : ''}${it.consumido ? ` · restam ${fmt(it.valor)} de ${fmt(it.valorOriginal)}` : ''}</small></span>
+      <span class="in-v"><span class="num ${ent ? 'pos' : ''}">${ent ? '+' : '−'}${fmt(it.valor)}</span>${S.readOnly ? '' : `<button class="check" data-act="toggle" data-id="${esc(it.id)}" title="Marcar como feito" aria-label="Marcar ${esc(it.descricao)} como feito"></button>`}</span></div>`;
+  };
+  const atrasos = acoes.filter(a => a.d < HOJE).length;
+  // cartões e vouchers
+  const cards = C().cartoes.filter(c => c.ativo !== false && ids.includes(c.titular) && c.tipo !== 'terceiro' && (c.limite || c.tipo === 'beneficio'));
+  const cardTile = c => {
+    const L = limiteCartao(c);
+    if (L.beneficio) { const pct = L.limite ? Math.max(0, L.livre) / L.limite * 100 : 0;
+      return `<button class="in-card vou" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b><span class="chip">voucher</span></span>
+        <span class="eyebrow">Saldo disponível</span><span class="v">${fmt(L.livre)}</span>
+        <div class="lim-meter"><b style="width:${pct}%;background:var(--pos)"></b></div><small>${fmt(L.usado)} usados de ${fmt(L.limite)} em ${mesN}${L.livreProj < L.livre - 0.004 ? ` · previsto sobrar ${fmt(L.livreProj)}` : ''}</small></button>`; }
+    const fech = L.fechada.falta > 0.004, over = L.livre < -0.004, pct = L.limite ? Math.min(100, L.usado / L.limite * 100) : 0, pctP = L.limite ? Math.min(100, L.proj / L.limite * 100) : 0;
+    const cor = pctP >= 100 ? 'var(--neg)' : pctP >= 80 ? 'var(--warn)' : 'var(--accent)';
+    return `<button class="in-card ${over ? 'over' : ''}" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b>${tit === 'casal' ? `<span class="chip">${esc(titNome(c.titular))}</span>` : ''}</span>
+      <span class="eyebrow">${fech ? `Fatura fechada · ${c.descontoSalario ? 'desconto' : 'vence'} ${dm(L.fechada.venc)}` : `Fatura aberta · vence ${dm(L.ab.venc)}`}</span>
+      <span class="v">${fmt(fech ? L.fechada.falta : L.ab.real)}</span>
+      <div class="lim-meter"><i style="width:${pctP}%;background:${cor}"></i><b style="width:${pct}%;background:${cor}"></b></div>
+      <small>${over ? `<span class="neg">Acima do limite em ${fmt(-L.livre)}</span>` : `Livre ${fmt(L.livre)} de ${fmt(L.limite)}`}${fech ? ` · próxima ${fmt(L.ab.real)}${L.ab.prev > 0.004 ? ` + ${fmt(L.ab.prev)} previstos` : ''}` : L.ab.prev > 0.004 ? ` · + ${fmt(L.ab.prev)} previstos` : ''}</small></button>`;
+  };
+  // metas: teto de impulsos, investimento e metas das caixinhas
+  const metas = [];
+  for (const t of ids) { const T = tetoImp(ym, t); if (!T) continue; const g = gastoImp(ym, t), pct = g / T * 100, c = pct >= 100 ? 'neg' : pct >= 80 ? 'warn' : 'pos';
+    metas.push(`<div class="in-meta"><b>Teto de impulsos${ids.length > 1 ? ' · ' + esc(titNome(t)) : ''}</b><span class="num ${c}">${fmt(g)} de ${fmt(T)}</span><div class="lim-meter"><b style="width:${Math.min(100, pct)}%;background:var(--${c})"></b></div><small>${pct >= 100 ? `Estourou em ${fmt(g - T)}.` : `Ainda pode ${fmt(T - g)} em ${mesN}.`}</small></div>`); }
+  if (!isPJ) { const mi = metaInv(ym, tit); if (mi.ent > 0) metas.push(`<div class="in-meta"><b>Guardar ${mi.meta}% da renda</b><span class="num ${mi.pct >= mi.meta ? 'pos' : 'warn'}">${mi.pct.toLocaleString('pt-BR', {maximumFractionDigits: 1})}%</span><div class="lim-meter"><b style="width:${Math.min(100, mi.pct / mi.meta * 100)}%;background:var(--${mi.pct >= mi.meta ? 'pos' : 'warn'})"></b></div><small>${fmt(mi.inv)} guardados de ${fmt(mi.ent)} de renda em ${mesN}.</small></div>`); }
+  for (const x of cxs) { const M = cxMeta(x.c, x.s); if (!M) continue;
+    metas.push(`<div class="in-meta"><b>${esc(x.c.nome)}</b><span class="num">${fmt(x.s.hoje)} de ${fmt(x.c.meta)}</span><div class="lim-meter"><b style="width:${M.pct}%;background:var(--${M.falta <= 0 ? 'pos' : 'accent'})"></b></div><small>${M.falta <= 0 ? 'Meta atingida.' : M.atinge ? `Faltam ${fmt(M.falta)} · no ritmo previsto chega em ${ymShort(M.atinge)}` : M.porMes ? `Faltam ${fmt(M.falta)} · precisa de ${fmt(M.porMes)}/mês` : `Faltam ${fmt(M.falta)} · sem aportes previstos`}</small></div>`); }
+  // próximos meses
+  const meses = []; for (let k = 0; k < 6; k++) { const m = ymAdd(ym, k), sd = E.saldo[tit]?.[m]; if (!sd) continue; meses.push({m, fim: sd.fim, res: resumoMes(m, tit).res, cx: round2(cxs.reduce((a, x) => a + (x.s.proj[k]?.v || 0), 0))}); }
+  const mx = Math.max(1, ...meses.map(x => Math.abs(x.fim)));
+  const negM = meses.find(x => x.fim < -0.004);
+  const fimCor = P.fim < -0.004 ? 'neg' : '';
+  return `<div class="in">
+    <section class="in-hero" aria-label="Saldo">
+      <span class="eyebrow">${tit === 'casal' ? 'Saldo nas contas hoje' : `Saldo na conta hoje · ${esc(titNome(tit))}`}</span>
+      <div class="big ${P.hoje < -0.004 ? 'neg' : ''}">${fmt(P.hoje)}</div>
+      <div class="in-proj">Fim de ${mesN}: <b class="${fimCor}">${fmt(P.fim)}</b>${Math.abs(P.fim - P.hoje) > 0.004 ? `<span>(${fmtS(P.fim - P.hoje)} até lá)</span>` : ''}</div>
+      <div class="in-kpis">
+        <div class="in-kpi"><span>Falta entrar</span><b class="pos">${fmt(P.eP + Math.max(0, P.tP))}</b></div>
+        <div class="in-kpi"><span>Falta pagar</span><b>${fmt(P.sP + Math.max(0, -P.tP))}</b></div>
+        <div class="in-kpi"><span>Caixinhas</span><b>${fmt(cxHoje)}</b></div>
+      </div>
+      ${tit === 'casal' ? `<div class="in-split">${ids.map(t => { const Pt = ponte(ym, t); return Pt ? `<span>${esc(titNome(t))}: <b>${fmt(Pt.hoje)}</b> → ${fmt(Pt.fim)}</span>` : ''; }).join('')}</div>` : ''}
+      ${P.cur && tit !== 'casal' ? `<div style="margin-top:12px"><button class="btn sm" data-act="conciliar">Conferir com o banco</button></div>` : ''}
+    </section>
+    ${negM ? `<div class="in-alert neg">O saldo projetado fica negativo em ${ymLong(negM.m)} (${fmt(negM.fim)}). Vale rever antes de gastar.</div>` : ''}
+    <section class="in-sec"><div class="in-sec-h"><h2>Próximos 15 dias</h2><button class="btn ghost sm" data-act="inicioMes" data-m="${ym}">Ver o mês</button></div>
+      ${atrasos ? `<div class="in-alert">${atrasos} ${atrasos > 1 ? 'itens previstos já passaram da data' : 'item previsto já passou da data'}. Marque como feito ou ajuste a data para o saldo ficar certo.</div>` : ''}
+      <div class="in-list">${acoes.length ? acoes.slice(0, 12).map(linhaAcao).join('') + (acoes.length > 12 ? `<div class="in-empty"><button class="btn ghost sm" data-act="nav" data-v="lanc">Ver mais ${acoes.length - 12}</button></div>` : '') : '<div class="in-empty">Nada a pagar ou receber nos próximos 15 dias.</div>'}</div></section>
+    ${cards.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Cartões e vouchers</h2><button class="btn ghost sm" data-act="nav" data-v="cartoes">Detalhes</button></div>
+      <div class="in-scroll">${cards.map(cardTile).join('')}</div></section>` : ''}
+    ${cxs.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Reservas e caixinhas</h2><button class="btn ghost sm" data-act="nav" data-v="caixinhas">Abrir</button></div>
+      <div class="in-list">${cxs.map(x => { const M = cxMeta(x.c, x.s), fimM = x.s.proj[0]?.v ?? x.s.hoje;
+        return `<div class="in-cx"><span class="n"><b>${esc(x.c.nome)}</b><small>${tit === 'casal' ? esc(titNome(x.c.titular)) + ' · ' : ''}${esc(CX_TIPOS[x.c.tipo] || 'Caixinha')}${x.c.restrita ? ' · reservada' : ''}</small></span>
+          <span class="r"><b>${fmt(x.s.hoje)}</b><small>${Math.abs(fimM - x.s.hoje) > 0.004 ? `fim de ${MES3[Number(ym.slice(5)) - 1]}: ${fmt(fimM)}` : 'sem movimento previsto'}</small></span>
+          ${M ? `<div class="lim-meter"><b style="width:${M.pct}%;background:var(--accent)"></b></div>` : ''}</div>`; }).join('')}</div></section>` : ''}
+    ${metas.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Metas</h2></div><div class="in-list">${metas.join('')}</div></section>` : ''}
+    <section class="in-sec"><div class="in-sec-h"><h2>Próximos meses</h2><button class="btn ghost sm" data-act="nav" data-v="fluxo">Fluxo</button></div>
+      <div class="in-list">${meses.map(x => `<button class="in-mes" data-act="inicioMes" data-m="${x.m}"><span class="m">${MES3[Number(x.m.slice(5)) - 1]}/${x.m.slice(2, 4)}</span>
+        <span class="trk"><b style="width:${Math.max(2, Math.abs(x.fim) / mx * 100)}%;background:var(--${x.fim < -0.004 ? 'neg' : 'accent'})"></b></span>
+        <span class="val"><b class="${x.fim < -0.004 ? 'neg' : ''}">${fmt(x.fim)}</b><small>${x.m === ym ? 'fim do mês' : `mês ${fmtS(x.res)}`}${x.cx > 0.004 ? ` · caixinhas ${fmtK(x.cx)}` : ''}</small></span></button>`).join('')}</div>
+      <p class="muted" style="font-size:12px;margin:0 2px">Saldo na conta no fim de cada mês, se tudo sair como previsto. Toque num mês para ver o detalhe.</p></section>
+  </div>`;
 }
 
 /* ============ painel ============ */
@@ -2256,7 +2469,11 @@ document.addEventListener('click', async e => {
   const a = el.dataset.act;
   if (a === 'closeScrim') { if (e.target === el) closeModal(); return; }
   switch (a) {
-    case 'nav': S.view = el.dataset.v; try { localStorage.setItem('pf.view', S.view); } catch (_) {} render(); window.scrollTo(0, 0); break;
+    case 'nav': S.view = el.dataset.v; S.maisOpen = false; try { localStorage.setItem('pf.view', S.view); } catch (_) {} render(); window.scrollTo(0, 0); break;
+    case 'mais': S.maisOpen = !S.maisOpen; renderTabbar(); break;
+    case 'maisFechar': S.maisOpen = false; renderTabbar(); break;
+    case 'novoLanc': if (S.db && !S.readOnly) openLanc(null); break;
+    case 'inicioMes': S.mes = el.dataset.m; S.fatMes = null; S.cache = null; S.view = 'painel'; try { localStorage.setItem('pf.view', S.view); } catch (_) {} render(); window.scrollTo(0, 0); break;
     case 'mes': S.mes = ymAdd(S.mes, Number(el.dataset.d)); S.fatMes = null; S.cache = null; render(); break;
     case 'sair': sair(); break;
     case 'hoje': S.mes = HOJE_YM; S.fatMes = null; S.cache = null; render(); break;
