@@ -198,7 +198,22 @@ tr.is-skip td{opacity:.45;text-decoration:line-through}
 .matrix td.cell:hover{text-decoration:underline}
 
 .cards{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.cardpick{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:10px 14px;cursor:pointer;text-align:left;min-width:140px;display:flex;flex-direction:column;gap:2px}
+.cardpick{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left;min-width:190px;display:flex;flex-direction:column;gap:3px;color:var(--ink);font:inherit}
+/* identidade de cada emissor: cores da marca (sem logotipos) */
+.cbrand{--accent:#fff;--warn:#FFD166;--neg:#FF9A8B;background:linear-gradient(135deg,var(--ca) 0%,var(--cb) 100%)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 6px 18px rgba(0,0,0,.14);position:relative;overflow:hidden}
+.cbrand::after{content:"";position:absolute;right:-40px;top:-60px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
+.cbrand small,.cbrand .eyebrow,.cbrand .muted,.cbrand .in-card small,.cbrand span.muted{color:rgba(255,255,255,.85)!important}
+.cbrand .chip{background:rgba(255,255,255,.2)!important;color:#fff!important;border-color:transparent!important}
+.cbrand .lim-meter{background:rgba(255,255,255,.28)}
+.cbrand .neg{color:#FFD3CC!important}.cbrand .warn{color:#FFE7A3!important}
+.cbrand .mk{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;opacity:.92}
+.cbrand .emv{width:26px;height:19px;border-radius:4px;background:linear-gradient(135deg,#F2DD95,#B8913A);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);flex:0 0 auto}
+.cardpick.cbrand[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink)}
+.cardpick.cbrand[aria-pressed="false"]{opacity:.82}
+.mes-chk{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 8px;margin-top:6px}
+.mes-chk label{display:flex;align-items:center;gap:4px;font-size:12.5px;cursor:pointer}
+.mes-chk input{accent-color:var(--accent)}
+.cbrand .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
 .cardpick[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .cardpick small{color:var(--muted);font-size:12px}
 .jn-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
@@ -255,9 +270,13 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .fab svg{width:18px;height:18px}
 
 /* Diálogo */
-.scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:30;display:flex;justify-content:flex-end}
-.sheet{width:min(460px,100%);height:100%;background:var(--surface);overflow-y:auto;padding:22px 22px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;box-shadow:-8px 0 30px rgba(0,0,0,.15)}
-.sheet.center{margin:auto;height:auto;max-height:90vh;border-radius:12px;width:min(420px,calc(100% - 32px))}
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px}
+.sheet{position:relative;width:min(540px,100%);max-height:calc(100vh - 48px);background:var(--surface);overflow-y:auto;padding:22px 24px 22px;display:flex;flex-direction:column;gap:16px;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.sheet.center{width:min(440px,100%)}
+@media (max-width:600px){
+  .scrim{align-items:flex-end;padding:0}
+  .sheet,.sheet.center{width:100%;max-height:92vh;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+}
 .sheet-head{display:flex;justify-content:space-between;align-items:center}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:12px;font-weight:600;color:var(--muted)}
@@ -375,7 +394,8 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .in-ab[open] .chev{transform:rotate(-135deg)}
 .in-card .nx{display:flex;flex-direction:column;gap:2px;font-size:12.5px}
 .in-card .nx span{display:flex;justify-content:space-between;gap:8px}
-.in-health{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.in-health{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.in-ht a{color:inherit}
 .in-ht{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .in-ht span{font-size:11.5px;color:var(--muted)}
 .in-ht b{font-family:var(--f-display);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
@@ -412,11 +432,11 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 /* barra de abas do celular */
 .tabbar{display:none}
 .sheet-scrim{position:fixed;inset:0;background:rgba(20,20,19,.35);z-index:45}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:46;background:var(--surface);border-radius:20px 20px 0 0;padding:10px 12px calc(16px + env(safe-area-inset-bottom,0px));max-height:80vh;overflow:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15)}
-.sheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+.msheet{position:fixed;left:0;right:0;bottom:0;z-index:46;background:var(--surface);border-radius:20px 20px 0 0;padding:10px 12px calc(16px + env(safe-area-inset-bottom,0px));max-height:80vh;overflow:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15)}
+.msheet .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
 .sheet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}
-.sheet .nav-btn{width:100%;padding:12px 10px;font-size:14.5px;line-height:1.25}
-.sheet .who{font-size:12.5px;color:var(--muted);padding:10px 12px 0;border-top:1px solid var(--line);margin-top:6px}
+.msheet .nav-btn{width:100%;padding:12px 10px;font-size:14.5px;line-height:1.25}
+.msheet .who{font-size:12.5px;color:var(--muted);padding:10px 12px 0;border-top:1px solid var(--line);margin-top:6px}
 @media (max-width:820px){
   .rail{display:none}
   .main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
@@ -573,6 +593,15 @@ function controleValor(r, m) {
   if (r.controle === 'energia') { const c = energiaLeituras().find(l => l.pagaEm === m); if (c) return Number(c.valor); const e = energiaEstimativa(); return e && m > e.ate ? e.valor : null; }
   return null;
 }
+// frequência: todo mês (padrão), a cada N meses contando do início (r.cada) ou só em meses do ano escolhidos (r.meses = [1..12])
+const REC_REP = [['1', 'Todo mês'], ['2', 'A cada 2 meses'], ['3', 'A cada 3 meses'], ['6', 'A cada 6 meses'], ['12', 'Uma vez por ano'], ['meses', 'Só em alguns meses do ano']];
+function mesesEntre(a, b) { return (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7)); }
+function recNoMes(r, m) {
+  if (Array.isArray(r.meses) && r.meses.length) return r.meses.includes(Number(m.slice(5, 7)));
+  const n = Number(r.cada) || 1; return n <= 1 || ((mesesEntre(r.inicio, m) % n) + n) % n === 0;
+}
+function recProxMeses(r, de, k) { const out = []; for (let m = de, i = 0; out.length < k && i < 60; m = ymAdd(m, 1), i++) if (recNoMes(r, m)) out.push(m); return out; }
+function recFreqTxt(r) { if (Array.isArray(r.meses) && r.meses.length) return r.meses.length === 12 ? 'todo mês' : 'em ' + r.meses.map(n => MES3[n - 1]).join(', '); const n = Number(r.cada) || 1; return n <= 1 ? 'todo mês' : n === 12 ? 'uma vez por ano' : `a cada ${n} meses`; }
 function recValor(r, m) {
   if (r.pctDe) { const b = S.recs.get(r.pctDe); if (b) return round2(recValor(b, m) * (Number(r.pct) || 0) / 100); }
   let v = Number(r.valor) || 0;
@@ -612,7 +641,7 @@ function engine() {
     let m = r.inicio < start ? start : r.inicio;
     const last = r.fim && r.fim < end ? r.fim : end;
     while (m <= last) {
-      if (!recLinks.has(rid + '|' + m)) push(m, {id:'v:' + rid + ':' + m, virtual:true, recorrencia:rid, tipo:r.tipo, titular:r.titular, competencia:m, data:`${m}-${pad(Math.min(r.dia || 1, 28))}`, valor:recValor(r, m), descricao:r.descricao, categoria:r.categoria, meio:r.meio || 'conta', status:'previsto', fornecedor:r.fornecedor || '', natureza:r.natureza || 'recorrente', controle:r.controle || null, caixinha:r.caixinha || null, envelope:!!r.envelope});
+      if (recNoMes(r, m) && !recLinks.has(rid + '|' + m)) push(m, {id:'v:' + rid + ':' + m, virtual:true, recorrencia:rid, tipo:r.tipo, titular:r.titular, competencia:m, data:`${m}-${pad(Math.min(r.dia || 1, 28))}`, valor:recValor(r, m), descricao:r.descricao, categoria:r.categoria, meio:r.meio || 'conta', status:'previsto', fornecedor:r.fornecedor || '', natureza:r.natureza || 'recorrente', controle:r.controle || null, caixinha:r.caixinha || null, envelope:!!r.envelope});
       m = ymAdd(m, 1);
     }
   }
@@ -1138,9 +1167,12 @@ function cxNoFim(x, m) { // saldo da caixinha no fim do mês m
 function saudeHTML(tit, ids, cxs, E) {
   const ym = HOJE_YM, W = chartW(), isPJ = tit === pjId();
   // indicadores
-  const r0 = resumoMes(ym, tit), gr = id => C().categorias.find(c => c.id === id)?.grupo;
-  const div = round2(itensMes(ym, tit).filter(i => i.tipo === 'saida' && i.status !== 'pulado' && gr(i.categoria) === 'dividas').reduce((a, i) => a + i.valor, 0));
-  const pDiv = r0.e > 0 ? div / r0.e * 100 : 0;
+  const r0 = resumoMes(ym, tit);
+  // dívidas: pelo inventário cadastrado (inclui o que não aparece nos bancos), não pelos lançamentos
+  const dVis = d => d.status !== 'quitada' && (tit === 'casal' || ids.includes(d.titular) || (tit === 'nycolas' && d.titular === 'pj'));
+  let dTot = 0, dVc = 0, d30 = 0, dN = 0; for (const d of S.divs.values()) if (dVis(d)) { const c = divCalc(d); dTot += c.av + c.vc; dVc += c.vc; d30 += c.d30; dN++; }
+  const rendas = [0, 1, 2, 3].map(k => resumoMes(ymAdd(ym, -k), tit).e).filter(v => v > 0), rendaMed = rendas.length ? rendas.reduce((a, b) => a + b, 0) / rendas.length : 0;
+  const mRenda = rendaMed > 0 ? dTot / rendaMed : 0, pVc = dTot > 0 ? dVc / dTot * 100 : 0;
   const ant = [1, 2, 3].map(k => resumoMes(ymAdd(ym, -k), tit).s).filter(v => v > 0), despMed = ant.length ? ant.reduce((a, b) => a + b, 0) / ant.length : r0.s;
   const res = cxs.filter(x => x.c.tipo === 'reserva').reduce((a, x) => a + x.s.hoje, 0), meses = despMed > 0 ? res / despMed : 0;
   const mi = isPJ ? null : metaInv(ym, tit);
@@ -1149,7 +1181,12 @@ function saudeHTML(tit, ids, cxs, E) {
   const tiles = [];
   if (mi && mi.ent > 0) tiles.push(`<div class="in-ht"><span>Guardado</span><b>${nf(mi.pct, 0)}%</b>${mi.pct >= mi.meta ? st('ok', 'na meta') : mi.pct >= mi.meta / 2 ? st('at', 'abaixo') : st('cr', 'baixo')}<small>meta: ${mi.meta}%</small></div>`);
   tiles.push(`<div class="in-ht"><span>Reserva cobre</span><b>${nf(meses, 1)} ${meses >= 1.95 || meses < 0.05 ? 'meses' : 'mês'}</b>${meses >= 6 ? st('ok', 'saudável') : meses >= 3 ? st('at', 'em construção') : st('cr', 'frágil')}<small>ideal: 6 meses</small></div>`);
-  if (r0.e > 0) tiles.push(`<div class="in-ht"><span>Dívidas</span><b>${nf(pDiv, 0)}%</b>${pDiv <= 15 ? st('ok', 'leve') : pDiv <= 30 ? st('at', 'atenção') : st('cr', 'pesado')}<small>da renda do mês</small></div>`);
+  const fmtMil = v => v >= 1000 ? 'R$ ' + nf(v / 1000, 1) + ' mil' : fmt(v);
+  if (!dN) tiles.push(`<div class="in-ht"><span>Dívidas cadastradas</span><b>R$ 0</b>${st('ok', 'sem dívidas')}<small>nenhuma em aberto</small></div>`);
+  else {
+    tiles.push(`<div class="in-ht"><span><a href="#" data-act="nav" data-v="dividas">Dívidas cadastradas</a></span><b>${fmtMil(dTot)}</b>${mRenda <= 3 ? st('ok', 'leve') : mRenda <= 12 ? st('at', 'atenção') : st('cr', 'pesado')}<small>${rendaMed > 0 ? `${nf(mRenda, 1)} meses de renda · ` : ''}${dN} credor${dN > 1 ? 'es' : ''}</small></div>`);
+    tiles.push(`<div class="in-ht"><span>Em atraso</span><b>${fmtMil(dVc)}</b>${dVc < 0.01 ? st('ok', 'em dia') : pVc <= 25 ? st('at', 'atenção') : st('cr', 'crítico')}<small>${nf(pVc, 0)}% do total${d30 > 0 ? ` · ${fmt(d30)} vence em 30d` : ''}</small></div>`);
+  }
   // patrimônio: conta + caixinhas, 5 meses para trás e 6 para frente
   const meses12 = []; for (let k = -5; k <= 6; k++) meses12.push(ymAdd(ym, k));
   const conta = meses12.map(m => { const sd = E.saldo[tit]?.[m]; return sd ? round2(sd.fim) : null; });
@@ -1198,7 +1235,7 @@ function renderTabbar() {
     <button data-act="nav" data-v="cartoes" ${cur('cartoes')}>${svgI('cartoes')}Cartões</button>
     <button data-act="mais" ${naMais ? 'aria-current="page"' : ''}>${svgI('mais')}Mais</button>`;
   const sh = $('#sheet');
-  sh.innerHTML = S.maisOpen ? `<div class="sheet-scrim" data-act="maisFechar"></div><div class="sheet" role="dialog" aria-label="Todas as seções"><div class="grab"></div><div class="sheet-grid">
+  sh.innerHTML = S.maisOpen ? `<div class="sheet-scrim" data-act="maisFechar"></div><div class="msheet" role="dialog" aria-label="Todas as seções"><div class="grab"></div><div class="sheet-grid">
     ${VIEWS.filter(([k]) => !['inicio', 'lanc', 'cartoes'].includes(k)).map(([k, n]) => `<button class="nav-btn" data-act="nav" data-v="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${svgI(k)}${n}</button>`).join('')}</div>
     ${S.user ? `<div class="who">${esc(S.user.email)} · <a href="#" data-act="sair">sair</a></div>` : ''}</div>` : '';
 }
@@ -1243,7 +1280,8 @@ function vInicio() {
   const totAb = round2(abertos.reduce((s, a) => s + (a.fat ? -a.fat.falta : a.it.tipo === 'entrada' ? a.it.valor : -a.it.valor), 0));
   // cartões e vouchers
   const cards = C().cartoes.filter(c => c.ativo !== false && ids.includes(c.titular) && c.tipo !== 'terceiro' && (c.limite || c.tipo === 'beneficio'));
-  const cardTile = c => {
+  const cardTile = c => cardBrandWrap(c, cardTile0(c));
+  const cardTile0 = c => {
     const L = limiteCartao(c);
     if (L.beneficio) { const pct = L.limite ? Math.max(0, L.livre) / L.limite * 100 : 0;
       return `<button class="in-card vou" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b><span class="chip">voucher</span></span>
@@ -1607,7 +1645,7 @@ function vCartoes() {
     if (c.tipo === 'beneficio') info = `<small class="num">Gasto em ${ymShort(HOJE_YM)}: ${fmt(totFat(c.id, HOJE_YM, 'realizado'))}</small>`;
     else { const fe = ymAdd(ab, -1), fc = E.faturaCaixa, tF = fc.totFat[c.id + '|' + fe] || 0, falta = fc.restante(c.id, fe);
       info = `<small class="num">Aberta (${ymShort(ab)}): ${fmt(totFat(c.id, ab))}</small><small class="num">${c.descontoSalario ? (HOJE >= vencData(c, fe) ? `Fechada (${ymShort(fe)}): descontada no salário` : `Fechada (${ymShort(fe)}): ${fmt(tF)} sai do salário em ${dt(vencData(c, fe))}`) : tF < 0.005 ? `Fechada (${ymShort(fe)}): sem compras` : falta < 0.005 ? `Fechada (${ymShort(fe)}): paga` : `<span class="neg">Fechada (${ymShort(fe)}): falta ${fmt(falta)} · vence ${dt(vencData(c, fe))}</span>`}</small>`; }
-    return `<button class="cardpick" data-act="card" data-id="${c.id}" aria-pressed="${c.id === card.id}"><b>${esc(c.nome)}${S.tit === 'casal' ? ` <small>· ${esc(titNome(c.titular))}</small>` : ''}</b>${c.tipo && c.tipo !== 'credito' ? `<small>${esc(TIPO_CARTAO[c.tipo] || c.tipo)}</small>` : ''}${c.ativo ? info : '<small>Inativo</small>'}${L ? `<small class="num ${L.livre < 0 ? 'neg' : ''}">${c.tipo === 'beneficio' ? 'Disponível' : 'Livre'}: ${fmt(L.livre)} de ${fmt(L.limite)}</small>${meterLimite(L)}` : ''}${c.datasPendentes ? '<small class="warn">datas de fechamento a confirmar</small>' : ''}</button>`;
+    return cardBrandWrap(c, `<button class="cardpick" data-act="card" data-id="${c.id}" aria-pressed="${c.id === card.id}"><b>${esc(c.nome)}${S.tit === 'casal' ? ` <small>· ${esc(titNome(c.titular))}</small>` : ''}</b>${c.tipo && c.tipo !== 'credito' ? `<small>${esc(TIPO_CARTAO[c.tipo] || c.tipo)}</small>` : ''}${c.ativo ? info : '<small>Inativo</small>'}${L ? `<small class="num ${L.livre < 0 ? 'neg' : ''}">${c.tipo === 'beneficio' ? 'Disponível' : 'Livre'}: ${fmt(L.livre)} de ${fmt(L.limite)}</small>${meterLimite(L)}` : ''}${c.datasPendentes ? '<small class="warn">datas de fechamento a confirmar</small>' : ''}</button>`, 'cardpick');
   };
   const inat = sorted.filter(c => !c.ativo && c.id !== card.id);
   return `<div class="cards">${sorted.filter(c => c.ativo || c.id === card.id || S.cartaoInat).map(tile).join('')}${inat.length ? `<button class="btn ghost sm" data-act="cardInat" style="align-self:center">${S.cartaoInat ? 'Ocultar inativos' : `+ ${inat.length} inativo${inat.length > 1 ? 's' : ''}`}</button>` : ''}</div>
@@ -1984,6 +2022,30 @@ function limiteCartao(card) {
   const proj = round2(usado + prevAinda);
   return {aberta, fechada, ab, futuras, ultParcela: ult, usado, limite, livre: round2(limite - usado), pct: limite ? usado / limite * 100 : 0, proj, livreProj: round2(limite - proj), pctProj: limite ? proj / limite * 100 : 0, desde: fechada.fechou};
 }
+// cores de cada emissor (identidade visual, sem logotipo). c.cor / c.cor2 no cadastro do cartão têm prioridade.
+const CARD_BRANDS = [
+  [/nubank|^nu\b/, {a: '#8A05BE', b: '#4A0A78', m: 'Nubank'}],
+  [/mercado ?pago|^mp\b|mp-/, {a: '#0A84D0', b: '#00468C', m: 'Mercado Pago'}],
+  [/shopee/, {a: '#EE4D2D', b: '#B8231A', m: 'Shopee'}],
+  [/santander/, {a: '#EC0000', b: '#9E0000', m: 'Santander'}],
+  [/itau/, {a: '#EC7000', b: '#B34700', m: 'Itaú'}],
+  [/\bpan\b/, {a: '#0A7CC1', b: '#003E7E', m: 'Banco Pan'}],
+  [/alelo/, {a: '#3E9B3A', b: '#1B6B30', m: 'Alelo'}],
+  [/unix/, {a: '#2B3A55', b: '#111A2B', m: 'Unix Card'}],
+  [/creedz/, {a: '#3B3B46', b: '#14141A', m: 'Creedz'}],
+  [/taismani|prazo/, {a: '#A8551C', b: '#6E3410', m: 'Taismani'}],
+  [/\bhoje\b/, {a: '#55565E', b: '#26272C', m: 'Cartão Hoje'}],
+];
+function cardBrand(c) {
+  if (c.cor) return {a: c.cor, b: c.cor2 || c.cor, m: c.marca || c.nome};
+  const k = norm(c.id + ' ' + c.nome); for (const [re, v] of CARD_BRANDS) if (re.test(k)) return v; return null;
+}
+function cardBrandWrap(c, html, cls = 'in-card') {
+  const B = cardBrand(c); if (!B) return html;
+  const emv = ['credito', 'crediario'].includes(c.tipo || 'credito') ? '<span class="emv" aria-hidden="true"></span>' : '';
+  return html.replace(`<button class="${cls}`, `<button style="--ca:${B.a};--cb:${B.b}" class="cbrand ${cls}`)
+    .replace(/(<button[^>]*>)/, `$1<span class="ph"><span class="mk">${norm(c.nome).startsWith(norm(B.m)) ? '' : esc(B.m)}</span>${emv}</span>`);
+}
 function meterLimite(L, alto) {
   const cor = p => p >= 100 ? 'var(--neg)' : p >= 80 ? 'var(--warn)' : 'var(--accent)';
   return `<div class="lim-meter${alto ? ' alto' : ''}" role="img" aria-label="Usado ${fmt(L.usado)} de ${fmt(L.limite)}"><i style="width:${Math.max(0, Math.min(100, L.pctProj))}%;background:${cor(L.pctProj)}"></i><b style="width:${Math.max(0, Math.min(100, L.pct))}%;background:${cor(L.pct)}"></b></div>`;
@@ -2034,12 +2096,12 @@ function vFornecedores() {
 function vRecs() {
   const list = [...S.recs].filter(([, r]) => S.tit === 'casal' || r.titular === S.tit)
     .sort((a, b) => (a[1].tipo === b[1].tipo ? 0 : a[1].tipo === 'entrada' ? -1 : 1) || (b[1].ativo !== false) - (a[1].ativo !== false) || a[1].descricao.localeCompare(b[1].descricao));
-  const ativas = list.filter(([, r]) => r.ativo !== false && (!r.fim || r.fim >= HOJE_YM) && r.inicio <= HOJE_YM);
+  const ativas = list.filter(([, r]) => r.ativo !== false && (!r.fim || r.fim >= HOJE_YM) && r.inicio <= HOJE_YM && recNoMes(r, HOJE_YM));
   const mensal = ativas.reduce((s, [, r]) => s + (r.tipo === 'saida' ? -r.valor : r.valor), 0);
   return `<div class="panel-head"><p class="muted" style="margin:0;max-width:640px">Recorrências geram os previstos de cada mês sozinhas. Você só confirma ou ajusta o valor quando o mês acontece. Efeito líquido das que valem neste mês: <b class="num ${mensal >= 0 ? 'pos' : 'neg'}">${fmtS(mensal)}</b></p>
       <button class="btn primary" data-act="newRec" ${S.readOnly ? 'disabled' : ''}>Nova recorrência</button></div>
     ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>Descrição · fornecedor</th><th>Natureza</th><th>Categoria</th><th>Meio</th>${S.tit === 'casal' ? '<th>Titular</th>' : ''}<th>Período</th><th class="r">Valor</th><th></th></tr></thead><tbody>
-      ${list.map(([id, r]) => { const fim = r.fim && r.fim < HOJE_YM; return `<tr class="${r.ativo === false || fim ? 'is-prev' : ''}"><td><b style="font-weight:500">${esc(r.descricao)}</b>${r.ativo === false ? ' <span class="chip">pausada</span>' : fim ? ' <span class="chip">encerrada</span>' : ''}${r.fornecedor ? `<br><small>${fornTag(r.fornecedor)}</small>` : ''}</td><td>${r.natureza ? `<span class="chip ${['assinatura', 'recorrente'].includes(r.natureza) ? 'acc' : ''}">${esc(natNome(r.natureza))}</span>` : ''}</td><td class="muted">${esc(catNome(r.categoria))}</td><td class="muted">${esc(meioNome(r.meio))}</td>${S.tit === 'casal' ? `<td class="muted">${esc(titNome(r.titular))}</td>` : ''}<td class="muted num">${ymShort(r.inicio)} → ${r.fim ? ymShort(r.fim) : 'sem fim'}${r.parcelas ? ` · ${r.parcelas}×` : ''}${r.reajuste?.mes ? `<br><small>reajuste ${MES3[r.reajuste.mes - 1]} · ${r.reajuste.pct != null ? r.reajuste.pct.toLocaleString('pt-BR') + '%' : 'IPCA ~' + ipca().toLocaleString('pt-BR') + '%'}</small>` : ''}${r.controle ? `<br><small>via Controles (${r.controle})</small>` : ''}</td><td class="r num ${r.tipo === 'saida' ? 'neg' : 'pos'}">${r.tipo === 'saida' ? '−' : '+'}${fmt(recValor(r, S.mes < r.inicio ? r.inicio : S.mes))}${r.pctDe ? `<br><small class="muted">${String(r.pct).replace('.', ',')}% de ${esc(S.recs.get(r.pctDe)?.descricao || '')}</small>` : ''}${(r.reajuste?.mes || r.controle) && Math.abs(recValor(r, S.mes < r.inicio ? r.inicio : S.mes) - r.valor) > 0.004 ? `<br><small class="muted">base ${fmt(r.valor)}</small>` : ''}</td><td class="r"><button class="btn ghost sm" data-act="editRec" data-id="${esc(id)}">Editar</button></td></tr>`; }).join('')}
+      ${list.map(([id, r]) => { const fim = r.fim && r.fim < HOJE_YM; return `<tr class="${r.ativo === false || fim ? 'is-prev' : ''}"><td><b style="font-weight:500">${esc(r.descricao)}</b>${r.ativo === false ? ' <span class="chip">pausada</span>' : fim ? ' <span class="chip">encerrada</span>' : ''}${r.fornecedor ? `<br><small>${fornTag(r.fornecedor)}</small>` : ''}</td><td>${r.natureza ? `<span class="chip ${['assinatura', 'recorrente'].includes(r.natureza) ? 'acc' : ''}">${esc(natNome(r.natureza))}</span>` : ''}</td><td class="muted">${esc(catNome(r.categoria))}</td><td class="muted">${esc(meioNome(r.meio))}</td>${S.tit === 'casal' ? `<td class="muted">${esc(titNome(r.titular))}</td>` : ''}<td class="muted num">${ymShort(r.inicio)} → ${r.fim ? ymShort(r.fim) : 'sem fim'}${r.parcelas ? ` · ${r.parcelas}×` : ''}${recFreqTxt(r) !== 'todo mês' ? `<br><small>${esc(recFreqTxt(r))}</small>` : ''}${r.reajuste?.mes ? `<br><small>reajuste ${MES3[r.reajuste.mes - 1]} · ${r.reajuste.pct != null ? r.reajuste.pct.toLocaleString('pt-BR') + '%' : 'IPCA ~' + ipca().toLocaleString('pt-BR') + '%'}</small>` : ''}${r.controle ? `<br><small>via Controles (${r.controle})</small>` : ''}</td><td class="r num ${r.tipo === 'saida' ? 'neg' : 'pos'}">${r.tipo === 'saida' ? '−' : '+'}${fmt(recValor(r, S.mes < r.inicio ? r.inicio : S.mes))}${r.pctDe ? `<br><small class="muted">${String(r.pct).replace('.', ',')}% de ${esc(S.recs.get(r.pctDe)?.descricao || '')}</small>` : ''}${(r.reajuste?.mes || r.controle) && Math.abs(recValor(r, S.mes < r.inicio ? r.inicio : S.mes) - r.valor) > 0.004 ? `<br><small class="muted">base ${fmt(r.valor)}</small>` : ''}</td><td class="r"><button class="btn ghost sm" data-act="editRec" data-id="${esc(id)}">Editar</button></td></tr>`; }).join('')}
     </tbody></table></div>` : `<div class="panel empty"><h3>Nenhuma recorrência</h3><p>Cadastre salário, aluguel e assinaturas uma vez e elas aparecem em todos os meses.</p></div>`}`;
 }
 
@@ -2636,7 +2698,7 @@ function closeModal() { $('#modal').innerHTML = ''; S.form = null; S.recForm = n
 function openRec(id) {
   const r = id ? S.recs.get(id) : null;
   S.recForm = {id, tipo: r?.tipo || 'saida', descricao: r?.descricao || '', fornecedor: r?.fornecedor || '', natureza: r?.natureza || 'recorrente', categoria: r?.categoria || '', valor: r ? String(r.valor).replace('.', ',') : '', titular: r?.titular || (S.tit === 'casal' ? 'nycolas' : S.tit), meio: r?.meio || 'conta', dia: r?.dia || 5, inicio: r?.inicio || HOJE_YM, fim: r?.fim || '', ativo: r ? r.ativo !== false : true,
-    freq: r?.parcelas ? 'parcelas' : r?.fim ? 'ate' : 'sem-fim', parcelas: r?.parcelas || 12, reajMes: r?.reajuste?.mes || '', reajPct: r?.reajuste?.pct ?? '', reajDesde: r?.reajuste?.desde || '', controle: r?.controle || '', caixinha: r?.caixinha || ''};
+    freq: r?.parcelas ? 'parcelas' : r?.fim ? 'ate' : 'sem-fim', parcelas: r?.parcelas || 12, rep: r?.meses?.length ? 'meses' : String(r?.cada || 1), meses: r?.meses || [], reajMes: r?.reajuste?.mes || '', reajPct: r?.reajuste?.pct ?? '', reajDesde: r?.reajuste?.desde || '', controle: r?.controle || '', caixinha: r?.caixinha || ''};
   drawRec();
 }
 function drawRec() {
@@ -2653,6 +2715,8 @@ function drawRec() {
       <div class="field"><label for="rc-meio">Pago com</label><select class="input" id="rc-meio" data-r="meio"><option value="conta">Conta</option>${c.cartoes.filter(k => k.titular === R.titular).map(k => `<option value="${k.id}" ${k.id === R.meio ? 'selected' : ''}>Cartão ${esc(k.nome)} (cai na fatura)</option>`).join('')}</select></div></div>
     <div class="fields2"><div class="field"><label for="rc-freq">Frequência</label><select class="input" id="rc-freq" data-r="freq">${[['sem-fim', 'Todo mês, sem data para acabar'], ['ate', 'Todo mês, até um mês definido'], ['parcelas', 'Número de parcelas'], ...(R.id ? [] : [['unica', 'Uma vez só (lançamento previsto)']])].map(([v, n]) => `<option value="${v}" ${R.freq === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div class="field"><label for="rc-ini">${R.freq === 'unica' ? 'Mês' : 'Começa em'}</label><input class="input" type="month" id="rc-ini" value="${R.inicio}" data-r="inicio"></div></div>
+    ${R.freq !== 'unica' ? `<div class="field"><label for="rc-rep">Repete</label><select class="input" id="rc-rep" data-r="rep">${REC_REP.map(([v, n]) => `<option value="${v}" ${R.rep === v ? 'selected' : ''}>${n}</option>`).join('')}</select>
+      ${R.rep === 'meses' ? `<div class="mes-chk">${MES3.map((n, i) => `<label><input type="checkbox" data-rmes="${i + 1}" ${(R.meses || []).includes(i + 1) ? 'checked' : ''}>${n}</label>`).join('')}</div>` : R.rep !== '1' ? `<small class="muted">Conta a partir do mês de início: ${recProxMeses({inicio: R.inicio, cada: Number(R.rep)}, R.inicio, 4).map(ymShort).join(', ')}…</small>` : ''}</div>` : ''}
     ${R.freq === 'ate' ? `<div class="field"><label for="rc-fim">Último mês</label><input class="input" type="month" id="rc-fim" value="${R.fim || ''}" data-r="fim"></div>` : ''}
     ${R.freq === 'parcelas' ? `<div class="field"><label for="rc-parc">Parcelas</label><input class="input num" type="number" min="1" id="rc-parc" value="${R.parcelas}" data-r="parcelas"><small class="muted">Última parcela em ${ymLong(fimParc)}</small></div>` : ''}
     ${R.freq !== 'unica' ? `<div class="fields3"><div class="field"><label for="rc-rjm">Reajuste anual em</label><select class="input" id="rc-rjm" data-r="reajMes"><option value="">Sem reajuste</option>${MESES.map((n, i) => `<option value="${i + 1}" ${Number(R.reajMes) === i + 1 ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
@@ -2663,7 +2727,7 @@ function drawRec() {
       <div class="fields2"><div class="field"><label for="rc-forn">Fornecedor</label><input class="input" id="rc-forn" list="dl-rforn" value="${esc(R.fornecedor)}" data-r="fornecedor"><datalist id="dl-rforn">${[...fornecedores().keys()].sort().map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
       <div class="field"><label for="rc-nat">Natureza</label><select class="input" id="rc-nat" data-r="natureza">${NATUREZAS.filter(n => !['avulso', 'ajuste'].includes(n[0])).map(([id, n]) => `<option value="${id}" ${id === R.natureza ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
       <label class="switch"><input type="checkbox" id="rc-ativo" data-r="ativo" ${R.ativo ? 'checked' : ''}>Ativa</label>` : ''}
-    <div class="hint">${R.freq === 'unica' ? 'Vira um lançamento previsto no mês escolhido.' : `Gera um previsto em cada mês${R.reajMes ? `, com reajuste em ${MESES[R.reajMes - 1]} de cada ano` : ''}${R.meio !== 'conta' ? ', dentro da fatura do cartão' : ''}. Mudanças aqui valem para os meses ainda não confirmados.`}</div>
+    <div class="hint">${R.freq === 'unica' ? 'Vira um lançamento previsto no mês escolhido.' : `Gera um previsto ${R.rep === 'meses' ? 'nos meses marcados' : R.rep !== '1' ? `a cada ${R.rep} meses` : 'em cada mês'}${R.reajMes ? `, com reajuste em ${MESES[R.reajMes - 1]} de cada ano` : ''}${R.meio !== 'conta' ? ', dentro da fatura do cartão' : ''}. Mudanças aqui valem para os meses ainda não confirmados.`}</div>
     <div class="sheet-foot">${R.id ? '<button type="button" class="btn danger" data-act="askDelRec">Excluir</button>' : ''}<span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
     <div id="confirm-area"></div></form></div>`;
 }
@@ -2676,10 +2740,12 @@ async function submitRec() {
   }
   const fim = R.freq === 'ate' ? (R.fim || null) : R.freq === 'parcelas' ? ymAdd(R.inicio, (Number(R.parcelas) || 1) - 1) : null;
   if (R.freq === 'ate' && !fim) return toast('Informe o último mês.');
+  if (R.rep === 'meses' && !(R.meses || []).length) return toast('Escolha ao menos um mês em que ela acontece.');
   if (fim && fim < R.inicio) return toast('O mês final precisa ser depois do início.');
   const old = R.id ? S.recs.get(R.id) || {} : {};
   const pct = parseValor(R.reajPct);
   const ok = await put('recorrencias', R.id || 'rc-' + uid(), {...old, tipo: R.tipo, descricao: R.descricao.trim(), fornecedor: (R.fornecedor || '').trim(), natureza: R.natureza, categoria: R.categoria, valor: round2(v), titular: R.titular, meio: R.meio, dia: Number(R.dia) || 1, inicio: R.inicio, fim,
+    cada: R.rep !== 'meses' && Number(R.rep) > 1 ? Number(R.rep) : null, meses: R.rep === 'meses' && (R.meses || []).length ? R.meses : null,
     parcelas: R.freq === 'parcelas' ? Number(R.parcelas) || 1 : null, reajuste: R.reajMes ? {mes: Number(R.reajMes), pct: isNaN(pct) ? null : pct, desde: Number(R.reajDesde) || null, indice: isNaN(pct) ? 'IPCA' : 'fixo'} : null, caixinha: R.caixinha || null, controle: R.controle || null, ativo: !!R.ativo});
   if (ok) { closeModal(); toast('Recorrência salva.'); }
 }
@@ -2926,7 +2992,8 @@ document.addEventListener('input', e => {
     return;
   }
   if (t.dataset.x && S.cxForm) { S.cxForm[t.dataset.x] = t.type === 'checkbox' ? t.checked : t.value; return; }
-  if (t.dataset.r && S.recForm) { const k = t.dataset.r; S.recForm[k] = t.type === 'checkbox' ? t.checked : t.value; if (k === 'titular') S.recForm.meio = 'conta'; if (['titular', 'freq', 'reajMes', 'controle', 'meio'].includes(k) || (k === 'parcelas' && S.recForm.freq === 'parcelas') || (k === 'inicio' && S.recForm.freq === 'parcelas')) { drawRec(); const f = document.getElementById(t.id); if (f && f.type !== 'select-one') { f.focus(); } } return; }
+  if (t.dataset.rmes && S.recForm) { const n = Number(t.dataset.rmes), s = new Set(S.recForm.meses || []); t.checked ? s.add(n) : s.delete(n); S.recForm.meses = [...s].sort((a, b) => a - b); return; }
+  if (t.dataset.r && S.recForm) { const k = t.dataset.r; S.recForm[k] = t.type === 'checkbox' ? t.checked : t.value; if (k === 'titular') S.recForm.meio = 'conta'; if (['titular', 'freq', 'reajMes', 'controle', 'meio', 'rep'].includes(k) || (k === 'parcelas' && S.recForm.freq === 'parcelas') || (k === 'inicio' && S.recForm.freq === 'parcelas')) { drawRec(); const f = document.getElementById(t.id); if (f && f.type !== 'select-one') { f.focus(); } } return; }
   if (t.dataset.d && S.divForm) { S.divForm[t.dataset.d] = t.value; return; }
   if (t.dataset.fo) { if (t.dataset.fo === 'busca') { S.fornBusca = t.value; clearTimeout(S._ft); S._ft = setTimeout(() => { render(); const b = $('#fo-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); } else if (t.dataset.fo === 'todos') { S.fornTodos = t.checked; render(); } else { S.fornNat = t.value; render(); } return; }
   if (t.dataset.filtro) { S.filtro[t.dataset.filtro] = t.value; if (t.dataset.filtro === 'busca') { clearTimeout(S._bt); S._bt = setTimeout(() => { render(); const b = $('#f-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); } else render(); return; }
