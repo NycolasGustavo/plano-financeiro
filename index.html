@@ -1058,7 +1058,11 @@ function vBanco() {
     </section>
     <section class="in-sec"><div class="in-sec-h"><h2>Saldos no banco</h2></div><div class="in-list">${contas.filter(c => c.titular).map(c => {
       let app = null, dif = null;
-      if (c.tipo === 'BANK' && c.meio === 'conta') { const P = ponte(HOJE_YM, c.titular); app = P?.hoje ?? null; }
+      if (c.tipo === 'BANK' && c.meio === 'conta') { // titular com mais de um banco: compara a soma das contas com o saldo do app (na última conta)
+        const irmas = contas.filter(o => o.tipo === 'BANK' && o.meio === 'conta' && o.titular === c.titular);
+        if (irmas[irmas.length - 1] === c) { const P = ponte(HOJE_YM, c.titular); app = P?.hoje ?? null;
+          if (app != null && irmas.length > 1) { const soma = round2(irmas.reduce((a, o) => a + Number(o.saldo || 0), 0)); dif = round2(soma - app);
+            return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · conta</small></span><span class="r"><b>${fmt(c.saldo)}</b><small>soma dos bancos ${fmt(soma)} · ${Math.abs(dif) < 0.011 ? '<span class="pos">igual ao app</span>' : `app ${fmt(app)} · <span class="${dif < 0 ? 'neg' : 'warn'}">dif. ${fmtS(dif)}</span>`}</small></span></div>`; } } }
       else if (c.tipo === 'CREDIT') { const cd = cardById(c.meio); if (cd) { const Lc = limiteCartao(cd); app = round2(Lc.usado); } }
       if (app != null) dif = round2(Number(c.saldo) - app);
       return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · ${c.tipo === 'CREDIT' ? 'cartão (usado)' : 'conta'}${c.limite ? ` · limite ${fmt(c.limite)}` : ''}</small></span>
@@ -1075,6 +1079,7 @@ function vBanco() {
       <p class="muted" style="font-size:12px;margin:0 2px">"Lançar" cria o lançamento já como realizado. "Confirmar" e "Quitar" ligam ao que já existe no app, sem duplicar.</p></section>
   </div>`;
 }
+window.__pf = {S, impLista: () => impLista(), impAplica: (id, sg) => impAplica(id, sg), engine: () => engine(), ponte: (m, t) => ponte(m, t), limiteCartao: c => limiteCartao(c), cardById: id => cardById(id)}; // console de conferência
 async function pgSync() {
   if (!S.sb) return toast('Disponível no app publicado.');
   toast('Buscando no banco…');
