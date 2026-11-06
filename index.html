@@ -481,6 +481,7 @@ const parseValor = s => { if (typeof s === 'number') return s; s = String(s || '
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const ICON = {
+  banco:'<path d="M3 8.5 10 4l7 4.5M4.5 9v6M8 9v6M12 9v6M15.5 9v6M3 16.5h14"/>',
   inicio:'<path d="M3 9.5 10 3.5l7 6V17h-4.5v-4.5h-5V17H3z"/>',
   mais:'<circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/>',
   painel:'<path d="M3 3h6v8H3zM11 3h6v5h-6zM11 10h6v7h-6zM3 13h6v4H3z"/>',
@@ -504,7 +505,7 @@ const CHECK = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke
 const S = {
   db: null, downloads: null, config: null, configLoaded: false,
   lancByYear: {}, lanc: new Map(), recs: new Map(), divs: new Map(), planos: new Map(), ctrl: {}, pagamentos: new Map(), compraItens: new Map(), compraListas: new Map(), compras: new Map(), cxs: new Map(),
-  view: 'inicio', mes: HOJE_YM, maisOpen: false, inAbOpen: false, tit: 'nycolas',
+  view: 'inicio', imps: new Map(), pgContas: new Map(), pgCfg: {}, mes: HOJE_YM, maisOpen: false, inAbOpen: false, tit: 'nycolas',
   filtro: {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''},
   cartaoSel: null, fatMes: null, openGroups: new Set(), imp: null, cache: null, readOnly: false,
 };
@@ -914,11 +915,14 @@ function startSubs(db) {
   db.collection('compraItens').limit(1000).onSnapshot(snap => { S.compraItens = new Map(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, dbErr);
   db.collection('compraListas').limit(200).onSnapshot(snap => { S.compraListas = new Map(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, dbErr);
   db.collection('compras').limit(500).onSnapshot(snap => { S.compras = new Map(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, dbErr);
+  db.collection('importados').limit(1000).onSnapshot(snap => { S.imps = new Map(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, () => {});
+  db.collection('pluggyContas').limit(50).onSnapshot(snap => { S.pgContas = new Map(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, () => {});
+  db.collection('pluggy').limit(10).onSnapshot(snap => { S.pgCfg = Object.fromEntries(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, () => {});
 }
 let rafId = 0; function renderSoon() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(render); }
 
 /* ============ render: moldura ============ */
-const VIEWS = [['inicio','Início'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Caixinhas e investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['ajustes','Ajustes']];
+const VIEWS = [['inicio','Início'],['banco','Conferir banco'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Caixinhas e investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['ajustes','Ajustes']];
 function renderRail() {
   const rail = $('#rail');
   rail.innerHTML = `<div class="brand"><i>R$</i>Plano Financeiro</div>` +
@@ -927,7 +931,7 @@ function renderRail() {
 }
 function renderBar() {
   const tits = [...C().titulares.map(t => [t.id, t.nome]), ['casal', 'Casal']];
-  const showMonth = !['inicio', 'recs', 'dividas', 'caixinhas', 'importar', 'ajustes'].includes(S.view);
+  const showMonth = !['inicio', 'banco', 'recs', 'dividas', 'caixinhas', 'importar', 'ajustes'].includes(S.view);
   $('#bar').innerHTML = `
     ${showMonth ? `<div class="month"><button class="icon-btn" data-act="mes" data-d="-1" aria-label="Mês anterior">‹</button><h1>${ymLong(S.mes)}</h1><button class="icon-btn" data-act="mes" data-d="1" aria-label="Próximo mês">›</button>
     ${S.mes !== HOJE_YM ? `<button class="btn ghost sm" data-act="hoje">Hoje</button>` : ''}</div>` : `<h1 style="font-size:24px">${VIEWS.find(v => v[0] === S.view)[1]}</h1>`}
@@ -939,7 +943,7 @@ function render() {
   renderRail(); renderBar(); renderTabbar();
   $('#fab').hidden = !S.db || S.readOnly;
   const v = $('#view');
-  const fn = {inicio: vInicio, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
+  const fn = {inicio: vInicio, banco: vBanco, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
   v.innerHTML = fn();
   if (S.view === 'importar') bindDrop();
 }
@@ -949,6 +953,116 @@ function renderNoDb() {
 }
 
 
+
+
+/* ============ conferir banco (Pluggy / Open Finance) ============ */
+function impSugestao(imp, usados) {
+  const d = norm(imp.descricao + ' ' + (imp.descricaoBanco || ''));
+  if (!imp.titular || !imp.meio) return {acao: 'semConta'};
+  const ligado = [...S.lanc.entries()].find(([, l]) => l.pluggyId === imp.pluggyId); if (ligado) return {acao: 'jaLigado', id: ligado[0]};
+  if (imp.cartao && imp.tipo === 'entrada' && /pagamento recebido/.test(d)) return {acao: 'ignorar', motivo: 'Pagamento da fatura: já entra pela saída da conta.'};
+  if (!imp.cartao && imp.tipo === 'entrada' && /adicionad.*credito|pix no credito/.test(d)) return {acao: 'ignorar', motivo: 'Pix no crédito: o gasto real está na fatura do cartão.'};
+  if (!imp.cartao && imp.tipo === 'saida') { const par = [...S.imps.values()].find(o => o !== imp && !o.cartao && o.tipo === 'entrada' && o.data === imp.data && Math.abs(o.valor - imp.valor) < 0.011 && /adicionad.*credito|pix no credito/.test(norm(o.descricao + ' ' + (o.descricaoBanco || ''))));
+    if (par) return {acao: 'ignorar', motivo: 'Pix no crédito: o gasto real está na fatura do cartão.'}; }
+  // pagamento de fatura de cartão (fica em "pagamentos")
+  if (!imp.cartao && imp.tipo === 'saida') { const pg = [...S.pagamentos.entries()].find(([pid, p]) => !usados.has('pg:' + pid) && Math.abs(Number(p.valor) - imp.valor) < 0.011 && Math.abs(diasEntre(p.data, imp.data)) <= 4);
+    if (pg) return {acao: 'vincularPg', pid: pg[0], txt: `Pagamento da fatura ${esc(cardById(pg[1].cartao)?.nome || pg[1].cartao)} (${dm(pg[1].data)})`}; }
+  const E = engine(), m0 = imp.data.slice(0, 7), cand = [];
+  for (const m of [ymAdd(m0, -1), m0, ymAdd(m0, 1)]) for (const it of (E.byMonth.get(m) || [])) {
+    if (it.titular !== imp.titular || it.tipo !== imp.tipo || it.status === 'pulado' || usados.has(it.id)) continue;
+    if (imp.cartao ? it.meio !== imp.meio : (it.meio && it.meio !== 'conta')) continue;
+    if (it.pluggyId && it.pluggyId !== imp.pluggyId) continue;
+    const dv = Math.abs((Number(it.valor) || 0) - imp.valor), dd = Math.abs(diasEntre(it.data || m + '-01', imp.data));
+    if (it.status === 'realizado' && dv < 0.011 && dd <= 4) cand.push({it, sc: dd, tipo: 'vincular'});
+    else if (it.status === 'previsto' && !ORC_CATS.has(it.categoria) && dv <= Math.max(1, imp.valor * 0.03) && dd <= 12) cand.push({it, sc: 10 + dd + dv, tipo: 'quitar'});
+  }
+  cand.sort((a, b) => a.sc - b.sc);
+  if (cand.length) return {acao: cand[0].tipo, it: cand[0].it};
+  // novo lançamento: regras do usuário, depois histórico pelo nome
+  const rg = (C().regras || []).find(g => g.contem && d.includes(norm(g.contem)));
+  let cat = rg?.categoria || null, forn = rg?.fornecedor || imp.estabelecimento || null, nat = rg?.natureza || null;
+  if (!cat) { const ch = norm(imp.estabelecimento || imp.descricao.split('|').pop()); const h = [...S.lanc.values()].reverse().find(l => (l.fornecedor && norm(l.fornecedor) === ch) || (l.descricao && norm(l.descricao) === ch)); if (h) { cat = h.categoria; forn ||= h.fornecedor; nat ||= h.natureza; } }
+  if (!cat || catTipo(cat) !== imp.tipo && !isFora(cat)) cat = imp.tipo === 'saida' ? 'compras-diversas' : 'outros-nr';
+  if (imp.parcelas > 1) nat = 'parcelado';
+  return {acao: 'lancar', cat, forn, nat: nat || 'avulso'};
+}
+function impLista() {
+  const usados = new Set(); const out = [];
+  const pend = [...S.imps.entries()].filter(([, i]) => i.estado === 'novo').sort((a, b) => (b[1].data + b[1].hora).localeCompare(a[1].data + a[1].hora));
+  for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); out.push({id, imp, sg}); }
+  return out;
+}
+async function impAplica(id, sgOver) {
+  const imp = S.imps.get(id); if (!imp) return false;
+  const sg = sgOver || impLista().find(x => x.id === id)?.sg; if (!sg) return false;
+  const marca = (estado, extra = {}) => put('importados', id, {...imp, estado, conferidoEm: new Date().toISOString(), ...extra});
+  if (sg.acao === 'ignorar') return marca('ignorado', {motivo: sg.motivo || 'Ignorado'});
+  if (sg.acao === 'jaLigado') return marca('vinculado', {lancId: sg.id});
+  if (sg.acao === 'vincularPg') return marca('vinculado', {lancId: 'pagamento:' + sg.pid});
+  if (sg.acao === 'vincular' || sg.acao === 'quitar') {
+    const it = sg.it; let lid = it.id, ok;
+    const extra = sg.acao === 'quitar' ? {valor: imp.valor, data: imp.data, editado: true, ...(Math.abs((Number(it.valor) || 0) - imp.valor) > 0.004 ? {obs: `${it.obs ? it.obs + ' ' : ''}Previsto ${fmt(it.valor)}; banco ${fmt(imp.valor)}.`} : {})} : {};
+    if (it.virtual) { lid = 'rx-' + uid(); ok = await put('lancamentos', lid, {...limpaVirtual(it), ...extra, pluggyId: imp.pluggyId}); }
+    else { const old = S.lanc.get(it.id); if (!old) return false; ok = await put('lancamentos', it.id, {...old, ...extra, status: 'realizado', pluggyId: imp.pluggyId}); }
+    return ok && marca('vinculado', {lancId: lid});
+  }
+  if (sg.acao === 'lancar') {
+    const card = imp.cartao ? cardById(imp.meio) : null, lid = 'pg-' + imp.pluggyId;
+    const descr = (imp.descricao.split('|').pop() || imp.descricao).trim();
+    const ok = await put('lancamentos', lid, {titular: imp.titular, tipo: imp.tipo, valor: imp.valor, data: imp.data, competencia: card ? competenciaCartao(card, imp.data) : imp.data.slice(0, 7),
+      meio: imp.meio, categoria: sg.cat, fornecedor: sg.forn || descr, descricao: sg.desc || descr, natureza: isFora(sg.cat) ? 'transferencia' : sg.nat, status: 'realizado', origem: 'pluggy', pluggyId: imp.pluggyId,
+      ...(imp.parcela ? {parcela: imp.parcela, parcelas: imp.parcelas} : {})});
+    return ok && marca('lancado', {lancId: lid});
+  }
+  return false;
+}
+function vBanco() {
+  const L = impLista(), st = S.pgCfg.status, contas = [...S.pgContas.values()].sort((a, b) => (a.titular ? 0 : 1) - (b.titular ? 0 : 1));
+  const sugTxt = ({imp, sg}) => {
+    if (sg.acao === 'semConta') return `<span class="muted">Conta sem vínculo com o app (ainda não usada).</span>`;
+    if (sg.acao === 'jaLigado') return `Já lançado no app.`;
+    if (sg.acao === 'ignorar') return `Ignorar: ${esc(sg.motivo)}`;
+    if (sg.acao === 'vincularPg') return `Já está no app: ${sg.txt}.`;
+    if (sg.acao === 'vincular') return `Já está no app: <b>${esc(sg.it.descricao)}</b> (${dm(sg.it.data)}).`;
+    if (sg.acao === 'quitar') return `Quita o previsto <b>${esc(sg.it.descricao)}</b> (${fmt(sg.it.valor)}${Math.abs(sg.it.valor - imp.valor) > 0.004 ? ` → ${fmt(imp.valor)}` : ''}).`;
+    return `Lançar como <b>${esc(catNome(sg.cat))}</b>${sg.forn ? ` · ${esc(sg.forn)}` : ''}${imp.cartao ? ` · fatura de ${ymLong(competenciaCartao(cardById(imp.meio) || {}, imp.data))}` : ''}.`;
+  };
+  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? 'Lançar' : sg.acao === 'quitar' ? 'Quitar' : 'Confirmar';
+  const aplicaveis = L.filter(x => x.sg.acao !== 'semConta' && x.sg.acao !== 'lancar');
+  const semConta = L.filter(x => x.sg.acao === 'semConta');
+  const vis = L.filter(x => x.sg.acao !== 'semConta');
+  return `<div class="in">
+    <section class="in-hero"><span class="eyebrow">Open Finance · Meu Pluggy</span>
+      <div class="in-proj" style="margin-top:6px">${st ? (st.ok ? `Última sincronização: <b>${new Date(st.ultimaSync).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}</b>` : `<span class="neg">Falha na última sincronização: ${esc(st.erro || '')}</span>`) : 'Ainda não sincronizado.'}</div>
+      <p class="muted" style="font-size:12.5px;margin:6px 0 0">O banco atualiza os dados para a Pluggy cerca de uma vez por dia. O app busca às 7h15 e às 19h15.</p>
+      ${S.sb && !S.readOnly ? `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="pgSync">Buscar agora</button>${aplicaveis.length ? `<button class="btn sm primary" data-act="impTodos">Confirmar ${aplicaveis.length} sugest${aplicaveis.length > 1 ? 'ões' : 'ão'} automáticas</button>` : ''}</div>` : ''}
+    </section>
+    <section class="in-sec"><div class="in-sec-h"><h2>Saldos no banco</h2></div><div class="in-list">${contas.filter(c => c.titular).map(c => {
+      let app = null, dif = null;
+      if (c.tipo === 'BANK' && c.meio === 'conta') { const P = ponte(HOJE_YM, c.titular); app = P?.hoje ?? null; }
+      else if (c.tipo === 'CREDIT') { const cd = cardById(c.meio); if (cd) { const Lc = limiteCartao(cd); app = round2(Lc.usado); } }
+      if (app != null) dif = round2(Number(c.saldo) - app);
+      return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · ${c.tipo === 'CREDIT' ? 'cartão (usado)' : 'conta'}${c.limite ? ` · limite ${fmt(c.limite)}` : ''}</small></span>
+        <span class="r"><b>${fmt(c.saldo)}</b><small>${app == null ? '' : Math.abs(dif) < 0.011 ? '<span class="pos">igual ao app</span>' : `app ${fmt(app)} · <span class="${dif < 0 ? 'neg' : 'warn'}">dif. ${fmtS(dif)}</span>`}</small></span></div>`; }).join('') || '<div class="in-empty">Nenhuma conta associada.</div>'}</div>
+      ${contas.some(c => !c.titular) ? `<p class="muted" style="font-size:12px;margin:0 2px">Também conectadas, sem uso no app: ${contas.filter(c => !c.titular).map(c => esc(c.marketingName || c.nome)).join(', ')}.</p>` : ''}</section>
+    <section class="in-sec"><div class="in-sec-h"><h2>Para conferir</h2><span class="muted" style="font-size:12.5px">${vis.length} transaç${vis.length === 1 ? 'ão' : 'ões'}</span></div>
+      <div class="in-list">${vis.length ? vis.map(x => { const {id, imp} = x, ent = imp.tipo === 'entrada';
+        return `<div class="in-it" style="grid-template-columns:48px minmax(0,1fr)"><span class="in-dt ${imp.cartao ? 'fat' : ''}"><b>${imp.data.slice(8, 10)}</b><small>${MES3[Number(imp.data.slice(5, 7)) - 1]}</small></span>
+          <span class="in-tx" style="gap:4px"><span style="display:flex;justify-content:space-between;gap:10px"><b style="white-space:normal">${esc(imp.descricao.split('|').pop().trim() || imp.descricao)}</b><span class="num ${ent ? 'pos' : ''}" style="font-weight:600;white-space:nowrap">${ent ? '+' : '−'}${fmt(imp.valor)}</span></span>
+            <small>${esc(imp.conta)}${imp.hora ? ' · ' + imp.hora : ''}${imp.situacao === 'PENDING' ? ' · pendente no banco' : ''}${imp.parcelas > 1 ? ` · parcela ${imp.parcela}/${imp.parcelas}` : ''}</small>
+            <small style="color:var(--ink);white-space:normal">${sugTxt(x)}</small>
+            ${S.readOnly ? '' : `<span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><button class="btn sm ${x.sg.acao === 'lancar' ? '' : 'primary'}" data-act="impOk" data-id="${esc(id)}">${btn(x)}</button>${x.sg.acao !== 'ignorar' ? `<button class="btn ghost sm" data-act="impIgn" data-id="${esc(id)}">Ignorar</button>` : `<button class="btn ghost sm" data-act="impLancar" data-id="${esc(id)}">Lançar mesmo assim</button>`}</span>`}</span></div>`; }).join('') : '<div class="in-empty">Tudo conferido. Nada pendente do banco.</div>'}</div>
+      ${semConta.length ? `<p class="muted" style="font-size:12px;margin:0 2px">${semConta.length} transações de contas sem vínculo ficaram de fora.</p>` : ''}
+      <p class="muted" style="font-size:12px;margin:0 2px">"Lançar" cria o lançamento já como realizado. "Confirmar" e "Quitar" ligam ao que já existe no app, sem duplicar.</p></section>
+  </div>`;
+}
+async function pgSync() {
+  if (!S.sb) return toast('Disponível no app publicado.');
+  toast('Buscando no banco…');
+  try { const {data, error} = await S.sb.functions.invoke('pluggy-sync', {body: {}}); if (error) throw error;
+    toast(data?.ok ? `Pronto: ${data.resumo.reduce((a, r) => a + r.novos, 0)} transações novas.` : 'Falhou: ' + (data?.erro || '')); }
+  catch (e) { toast('Não foi possível buscar agora: ' + (e.message || e)); }
+}
 
 /* ============ gráficos do Início (SVG puro, com dica ao tocar/passar o mouse) ============ */
 function chartW() { const m = document.querySelector('.main'); const w = (m?.clientWidth || window.innerWidth) - (window.innerWidth <= 820 ? 30 : 50); return Math.round(Math.max(280, Math.min(730, w))); }
@@ -1156,8 +1270,11 @@ function vInicio() {
         <div class="in-kpi"><span>Caixinhas</span><b>${fmt(cxHoje)}</b></div>
       </div>
       ${tit === 'casal' ? `<div class="in-split">${ids.map(t => { const Pt = ponte(ym, t); return Pt ? `<span>${esc(titNome(t))}: <b>${fmt(Pt.hoje)}</b> → ${fmt(Pt.fim)}</span>` : ''; }).join('')}</div>` : ''}
+      ${(() => { const cs = [...S.pgContas.values()].filter(c => c.tipo === 'BANK' && c.meio === 'conta' && ids.includes(c.titular)); if (!cs.length) return ''; const b = round2(cs.reduce((a, c) => a + Number(c.saldo || 0), 0)), dif = round2(b - P.hoje), at = S.pgCfg.status?.ultimaSync;
+        return `<div class="in-split" style="margin-top:12px"><span>No banco${at ? ` (${new Date(at).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})})` : ''}: <b>${fmt(b)}</b> ${Math.abs(dif) < 0.011 ? '<span class="pos">· confere</span>' : `<span class="warn">· diferença ${fmtS(dif)}</span>`}</span></div>`; })()}
       ${P.cur && tit !== 'casal' ? `<div style="margin-top:12px"><button class="btn sm" data-act="conciliar">Conferir com o banco</button></div>` : ''}
     </section>
+    ${(() => { const n = impLista().filter(x => x.sg.acao !== 'semConta' && ids.includes(x.imp.titular)).length; return n ? `<button class="in-alert" data-act="nav" data-v="banco" style="text-align:left;border:0;cursor:pointer;font:inherit;color:var(--ink)"><b>${n} ${n > 1 ? 'transações' : 'transação'} do banco para conferir</b><br><span class="muted" style="font-size:12.5px">Vieram pelo Open Finance. Toque para confirmar ou lançar.</span></button>` : ''; })()}
     ${negM ? `<div class="in-alert neg">O saldo projetado fica negativo em ${ymLong(negM.m)} (${fmt(negM.fim)}). Vale rever antes de gastar.</div>` : ''}
     <section class="in-sec"><div class="in-sec-h"><h2>Próximos 15 dias</h2><button class="btn ghost sm" data-act="inicioMes" data-m="${ym}">Ver o mês</button></div>
       <div class="in-list">${proximos.length ? proximos.slice(0, 12).map(linhaAcao).join('') + (proximos.length > 12 ? `<div class="in-empty"><button class="btn ghost sm" data-act="nav" data-v="lanc">Ver mais ${proximos.length - 12}</button></div>` : '') : '<div class="in-empty">Nada a pagar ou receber nos próximos 15 dias.</div>'}</div></section>
@@ -2636,6 +2753,11 @@ document.addEventListener('click', async e => {
   switch (a) {
     case 'nav': S.view = el.dataset.v; S.maisOpen = false; try { localStorage.setItem('pf.view', S.view); } catch (_) {} render(); window.scrollTo(0, 0); break;
     case 'mais': S.maisOpen = !S.maisOpen; renderTabbar(); break;
+    case 'pgSync': pgSync(); break;
+    case 'impOk': { const ok = await impAplica(el.dataset.id); if (ok) toast('Conferido.'); break; }
+    case 'impIgn': { const ok = await impAplica(el.dataset.id, {acao: 'ignorar', motivo: 'Ignorado manualmente'}); if (ok) toast('Ignorado.'); break; }
+    case 'impLancar': { const imp = S.imps.get(el.dataset.id); if (!imp) break; const sg = impSugestao({...imp, descricao: imp.descricao + ' '}, new Set()); const ok = await impAplica(el.dataset.id, sg.acao === 'lancar' ? sg : {acao: 'lancar', cat: imp.tipo === 'saida' ? 'compras-diversas' : 'outros-nr', nat: 'avulso'}); if (ok) toast('Lançado.'); break; }
+    case 'impTodos': { const L = impLista().filter(x => x.sg.acao !== 'semConta' && x.sg.acao !== 'lancar'); let n = 0; for (const x of L) if (await impAplica(x.id, x.sg)) n++; toast(`${n} conferidos.`); break; }
     case 'maisFechar': S.maisOpen = false; renderTabbar(); break;
     case 'novoLanc': if (S.db && !S.readOnly) openLanc(null); break;
     case 'inicioMes': S.mes = el.dataset.m; S.fatMes = null; S.cache = null; S.view = 'painel'; try { localStorage.setItem('pf.view', S.view); } catch (_) {} render(); window.scrollTo(0, 0); break;
