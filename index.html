@@ -552,6 +552,10 @@ details.help p{margin:0 0 6px}
 .imp-row .in-dt{margin-top:2px}
 .imp-row.sel{background:var(--accent-soft, rgba(201,100,66,.08))}
 .seg.sm button{padding:4px 10px;font-size:12.5px}
+.conf-fat{display:flex;flex-direction:column;gap:4px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--sunken);font-size:12.5px}
+.conf-l{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start}
+.conf-l i{font-style:normal;font-weight:700;text-align:center}
+.conf-l.ok i{color:var(--pos)}.conf-l.neg i,.conf-l.neg span{color:var(--neg)}.conf-l.warn i{color:var(--warn)}.conf-l.acc i{color:var(--accent)}.conf-l.muted{color:var(--muted)}
 /* descrições em até duas linhas no Início */
 .in-tx > b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 /* tabelas que viram cartões no celular */
@@ -2018,6 +2022,35 @@ function statusFatura(card, F) {
   return tot > 0.004 && fc.restante(card.id, F) < 0.005 ? 'paga' : 'fechada';
 }
 const ST_FAT = {descontada: ['ok', 'descontada no salário'], aberta: ['acc', 'aberta'], fechada: ['prev', 'fechada'], paga: ['ok', 'paga'], futura: ['', 'futura'], passada: ['', 'passada'], mes: ['acc', 'este mês'], passado: ['', 'passado']};
+/* ============ conferência da fatura: cartão x previstos x compras ============ */
+function compraDoLanc(lid) { for (const [cid, c] of S.compras) if (c.lancamento === lid) return [cid, c]; return null; }
+function conferenciaFatura(card, fm, itens) {
+  const E = engine(), fc = E.faturaCaixa, aberta = competenciaCartao(card, HOJE);
+  const real = round2(itens.filter(i => i.status === 'realizado').reduce((a, i) => a + (i.tipo === 'saida' ? i.valor : -i.valor), 0));
+  const linhas = [];
+  // pagamento x lançado (faturas que já venceram ou foram pagas)
+  if (card.tipo !== 'beneficio' && fm < aberta) {
+    const pago = round2(fc.paidFor[card.id + '|' + fm] || 0), dif = round2(real - pago);
+    if (card.descontoSalario && HOJE >= vencData(card, fm)) linhas.push(['ok', `Descontada no salário: ${fmt(real)} lançados.`]);
+    else if (pago < 0.005) linhas.push([real > 0.004 ? 'warn' : 'ok', real > 0.004 ? `Sem pagamento registrado para ${fmt(real)} lançados.` : 'Sem compras.']);
+    else linhas.push([Math.abs(dif) < 0.011 ? 'ok' : 'neg', Math.abs(dif) < 0.011 ? `Lançado ${fmt(real)} = pago ${fmt(pago)}.` : `Lançado ${fmt(real)} × pago ${fmt(pago)}: diferença de ${fmtS(dif)}. Confira se algum pagamento foi registrado na fatura errada ou se falta lançamento.`]);
+  }
+  // previsto de mercado neste cartão e mês x compras do mercado
+  const fontes = CP_FONTES.filter(f => f.meio === card.id);
+  for (const f of fontes) {
+    const prev = round2((E.byMonth.get(fm) || []).filter(i => i.meio === card.id && i.categoria === 'mercado' && i.status === 'previsto').reduce((a, i) => a + (Number(i.valorOriginal ?? i.valor) || 0), 0));
+    const notas = itens.filter(i => i.categoria === 'mercado' && i.status === 'realizado').map(i => ({i, c: compraDoLanc(i.id)}));
+    const merc = round2(notas.reduce((a, x) => a + x.i.valor, 0));
+    for (const x of notas) linhas.push([x.c ? 'ok' : 'muted', x.c ? `Compra de ${dm(x.i.data)} no ${esc(f.nome)}: ${fmt(x.i.valor)} · ${Array.isArray(x.c[1].itens) ? x.c[1].itens.length + (x.c[1].itens.length === 1 ? ' item' : ' itens') + ' na nota' : 'lista'}${x.c[1].carrinho ? ` · carrinho ${fmt(x.c[1].carrinho)}` : ''}.` : `${esc(x.i.descricao)} de ${x.i.data ? dm(x.i.data) : '–'}: ${fmt(x.i.valor)} sem nota vinculada.`]);
+    const ab = cpAberta();
+    if (ab && ab[1].fonte === f.id && cpComp(f) === fm) { const K = cpCalc(ab[1], cpItens()), M = cpMeta(ab[1], f), cabe = round2(M.v - K.total);
+      linhas.push([cabe < -0.004 ? 'warn' : 'acc', `Compra em andamento no ${esc(f.nome)}: ${K.carr > 0 ? `${fmt(K.carr)} no carrinho + ${fmt(K.falta)} a pegar` : `estimada em ${fmt(K.total)}`} · meta ${fmt(M.v)} · ${cabe < -0.004 ? `passa ${fmt(-cabe)}` : `ainda cabem ${fmt(cabe)}`}. <a href="#" data-act="nav" data-v="compras">Abrir</a>`]); }
+    if (prev + merc > 0.004) { const d = round2(merc - prev); linhas.push([merc > 0.004 && d > 0.004 ? 'warn' : 'muted', `Mercado nesta fatura: previsto ${fmt(prev)}, realizado ${fmt(merc)}${merc < 0.005 ? '' : d > 0.004 ? ` · passou ${fmt(d)} do previsto` : ` · ${fmt(-d)} do previsto ainda livre${fm < competenciaCartao(card, HOJE) ? ' (fatura fechada: sobra não usada)' : ''}`}.`]); }
+  }
+  if (!linhas.length) return '';
+  const ic = {ok: '✓', neg: '!', warn: '!', acc: '●', muted: '·'};
+  return `<div class="conf-fat">${linhas.map(([k, t]) => `<div class="conf-l ${k}"><i>${ic[k]}</i><span>${t}</span></div>`).join('')}</div>`;
+}
 function vCartoes() {
   const cards = C().cartoes.filter(c => S.tit === 'casal' || c.titular === S.tit);
   if (!cards.length) return `<div class="panel empty"><h3>Nenhum cartão para ${esc(titNome(S.tit))}</h3><p>Cadastre cartões em Ajustes, com dia de fechamento e de vencimento.</p><button class="btn" data-act="nav" data-v="ajustes">Ir para Ajustes</button></div>`;
@@ -2054,7 +2087,8 @@ function vCartoes() {
       <section class="panel">
         <div class="panel-head"><h3>${card.tipo === 'beneficio' ? 'Gastos de' : 'Fatura de'} ${ymLong(fm)} <span class="chip ${stc}">${stl}</span></h3><b class="num">${fmt(tot)}</b></div>
         ${card.tipo === 'beneficio' ? '' : `<p class="muted" style="margin:-6px 0 10px;font-size:12.5px">${fm <= abertaSel ? `Fecha ${dt(fechamentoData(card, fm))} · ${card.descontoSalario ? 'descontada do salário em' : 'vence'} ${dt(vencData(card, fm))}` : `${card.descontoSalario ? 'Descontada do salário em' : 'Vence'} ${dt(vencData(card, fm))}`}. Lançado ${fmt(totR)}${totP > 0.004 ? ` + previsto ${fmt(totP)}` : ''}.${(() => { const fc = E.faturaCaixa; const pago = fc.paidFor[card.id + '|' + fm] || 0; return pago ? ` Pago ${fmt(pago)} · falta ${fmt(fc.restante(card.id, fm))}.` : ''; })()}</p>`}
-        ${itens.length ? `<div class="rows">${itens.map(it => `<div class="row"><div class="t"><b>${esc(it.descricao)}${it.parcela ? ` <span class="chip">${it.parcela.n}/${it.parcela.total}</span>` : ''}</b><small>${it.data ? dt(it.data) + ' · ' : ''}${it.fornecedor ? fornTag(it.fornecedor) + ' · ' : ''}${esc(catNome(it.categoria))}${it.impulso ? ' · <span class="warn">impulso</span>' : ''}${it.status === 'previsto' ? ' · <span class="warn">previsto</span>' : ''}${it.virtual ? ' · recorrente' : ''}${it.consumido ? ` · ${fmt(it.consumido)} já abatido por lançamento real` : ''}</small></div><span class="num ${it.status === 'previsto' ? 'muted' : ''}">${fmt(it.valor)}</span><button class="btn ghost sm" data-act="edit" data-id="${esc(it.id)}">Editar</button></div>`).join('')}</div>`
+        ${card.tipo === 'beneficio' ? '' : conferenciaFatura(card, fm, itens)}
+        ${itens.length ? `<div class="rows">${itens.map(it => `<div class="row"><div class="t"><b>${esc(it.descricao)}${it.parcela ? ` <span class="chip">${it.parcela.n}/${it.parcela.total}</span>` : ''}</b><small>${it.data ? dt(it.data) + ' · ' : ''}${it.fornecedor ? fornTag(it.fornecedor) + ' · ' : ''}${esc(catNome(it.categoria))}${it.impulso ? ' · <span class="warn">impulso</span>' : ''}${it.status === 'previsto' ? ' · <span class="warn">previsto</span>' : ''}${it.virtual ? ' · recorrente' : ''}${it.consumido ? ` · ${fmt(it.consumido)} já abatido por lançamento real` : ''}${(() => { const cc = it.status === 'realizado' && it.categoria === 'mercado' ? compraDoLanc(it.id) : null; return cc ? ` · <a href="#" data-act="nav" data-v="compras">nota com ${Array.isArray(cc[1].itens) ? cc[1].itens.length : ''} itens</a>` : ''; })()}</small></div><span class="num ${it.status === 'previsto' ? 'muted' : ''}">${fmt(it.valor)}</span><button class="btn ghost sm" data-act="edit" data-id="${esc(it.id)}">Editar</button></div>`).join('')}</div>`
           : `<p class="muted">Nenhum ${card.tipo === 'beneficio' ? 'gasto neste mês' : 'item nesta fatura'}.</p>`}
       </section>
     </div>`;
@@ -2218,7 +2252,7 @@ function cpVaiPadrao(i, f) {
   return false;
 }
 function cpItens() { return [...S.compraItens].filter(([, i]) => i.ativo !== false).map(([id, i]) => ({...i, _id: id})); }
-function cpAberta() { return [...S.compras].find(([, c]) => c.status === 'planejando'); }
+function cpAberta() { return [...S.compras].filter(([, c]) => c.status === 'planejando').sort((a, b) => (b[1].criadaEm || '').localeCompare(a[1].criadaEm || '') || a[0].localeCompare(b[0]))[0]; }
 function cpEst(i, l) { return round2((Number(l?.qtd ?? i.qtdPadrao) || 0) * (Number(l?.preco ?? i.preco) || 0)); }
 const CP_UNS = ['un', 'pct', 'cx', 'kg', 'g', 'L', 'dz', 'fardo'];
 const cpUn = (i, l) => l?.un || i.unidade || 'un';
@@ -2401,8 +2435,8 @@ async function cpRegistrar() {
     const preco = a.q ? round2(a.v / a.q) : base.preco; const hist = [...(base.precos || []), {data, preco, loja: f.loja}].slice(-12);
     cur.set(id, {...base, preco, precos: hist, codigos: [...new Set([...(base.codigos || []), ...a.cods])], ultimaCompra: data, ...(a.un ? {unidade: a.un} : {})}); }
   const lid = 'cp-' + uid();
-  const lanc = {tipo: 'saida', titular: f.titular, competencia: comp, data, valor: round2(P.pago), descricao: f.meio === 'conta' ? 'Compra de mercado' : 'Compras do mês', fornecedor: f.loja, natureza: 'avulso', categoria: 'mercado', meio: f.meio, status: 'realizado', origem: 'nota'};
-  const cid = N.compraId || ('cm-' + uid()); const prev = N.compraId ? S.compras.get(N.compraId) : {};
+  const cid = N.compraId || ('cm-' + uid());
+  const lanc = {tipo: 'saida', titular: f.titular, competencia: comp, data, valor: round2(P.pago), descricao: f.meio === 'conta' ? 'Compra de mercado' : 'Compras do mês', fornecedor: f.loja, natureza: 'avulso', categoria: 'mercado', meio: f.meio, status: 'realizado', origem: 'nota', compra: cid}; const prev = N.compraId ? S.compras.get(N.compraId) : {};
   const carrPrev = prev?.itens && !Array.isArray(prev.itens) ? cpCalc(prev, cpItens()) : null;
   const compra = {...prev, status: 'concluida', fonte: f.id, data, loja: P.loja || f.loja, total: round2(P.pago), bruto: round2(P.bruto), desconto: round2(P.desc), itens: P.itens.map(x => ({item: x.item || null, nome: x.nome, qtd: x.qtd, vt: x.vt})), lancamento: lid, ...(carrPrev && carrPrev.carr > 0 ? {carrinho: carrPrev.carr, lista: prev.itens} : {})};
   closeModal();
@@ -2413,6 +2447,7 @@ async function cpRegistrar() {
   if (ok3) toast(`Salvo: ${ondeCai(lanc)} · ${Object.keys(agg).length} preços atualizados${carr && carr.carr > 0 ? ` · nota ${fmt(P.pago)} x carrinho ${fmt(carr.carr)} (${fmtS(round2(P.pago - carr.carr))})` : ''}`, async () => { await del('lancamentos', lid); if (N.compraId) await put('compras', cid, {...prev}); else await del('compras', cid); });
 }
 async function cpNova() {
+  if (cpAberta()) { toast('Já existe uma compra aberta. Continue por ela ou descarte antes de montar outra.'); return; }
   const f = cpFonte(S.cpFonte || 'unix'); const itens = {};
   for (const i of cpItens()) itens[i._id] = {vai: cpVaiPadrao(i, f), qtd: i.qtdPadrao ?? 1};
   await put('compras', 'cm-' + uid(), {status: 'planejando', fonte: f.id, criadaEm: HOJE, itens});
@@ -2441,7 +2476,7 @@ async function cpFecharValor() {
   const id = S.cpValorId, c = S.compras.get(id), f = cpFonte(c?.fonte); const v = parseValor($('#cpv-val').value); const data = $('#cpv-data').value || HOJE;
   if (isNaN(v) || v <= 0) return toast('Informe o valor pago.');
   const card = f.meio !== 'conta' ? cardById(f.meio) : null; const lid = 'cp-' + uid();
-  const lanc = {tipo: 'saida', titular: f.titular, competencia: card ? competenciaCartao(card, data) : data.slice(0, 7), data, valor: round2(v), descricao: f.meio === 'conta' ? 'Compra de mercado' : 'Compras do mês', fornecedor: f.loja, natureza: 'avulso', categoria: 'mercado', meio: f.meio, status: 'realizado', origem: 'compras'};
+  const lanc = {tipo: 'saida', titular: f.titular, competencia: card ? competenciaCartao(card, data) : data.slice(0, 7), data, valor: round2(v), descricao: f.meio === 'conta' ? 'Compra de mercado' : 'Compras do mês', fornecedor: f.loja, natureza: 'avulso', categoria: 'mercado', meio: f.meio, status: 'realizado', origem: 'compras', compra: id};
   const itens = cpItens().filter(i => c.itens?.[i._id]?.vai).map(i => ({item: i._id, nome: i.nome, qtd: Number(c.itens[i._id].qtd) || 0, vt: cpEst(i, c.itens[i._id])}));
   closeModal();
   if (await put('lancamentos', lid, lanc) && await put('compras', id, {...c, status: 'concluida', data, loja: f.loja, total: round2(v), itens, lancamento: lid, estimado: true}))
