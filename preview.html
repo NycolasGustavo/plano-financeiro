@@ -1400,7 +1400,7 @@ function destinoHTML(ym, tit) {
       ${D.entra > 0.004 ? ln('Ainda vai entrar', D.entra, '+ ', '', 'pos') : ''}
       ${D.contas > 0.004 ? ln('Contas e faturas a pagar', D.contas, '− ') : ''}
       ${D.apo > 0.004 ? ln('Guardar nos investimentos', D.apo, '− ', 'aportes previstos do mês') : ''}
-      ${D.env > 0.004 ? ln('Teto de besteiras disponível', D.env, '− ', 'o que não gastar vira sobra') : ''}
+      ${(() => { const T = tetoImp(ym, tit); if (!T && D.env < 0.005) return ''; const g = gastoImp(ym, tit); return ln('Teto de besteiras disponível', D.env, D.env > 0.004 ? '− ' : '', T ? (g > T + 0.004 ? `usou ${fmt(g)} de ${fmt(T)}: estourou em ${fmt(g - T)}` : `usou ${fmt(g)} de ${fmt(T)} · o que não gastar vira sobra`) : 'o que não gastar vira sobra'); })()}
       ${Math.abs(D.outros) > 0.004 ? ln('Rendimentos e ajustes', D.outros, D.outros < 0 ? '− ' : '+ ') : ''}
       ${ln(`Sobra livre no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', D.sobra > 0.004 ? `no fechamento, vai para "${SOBRA_NOME}"${cx ? '' : ' (a caixinha é criada na primeira vez)'}` : D.sobra < -0.004 ? 'o mês fecha no vermelho: revise o teto ou os aportes' : 'tudo já tem destino', 'tot ' + (D.sobra < -0.004 ? 'neg' : ''))}
     </div></section>`;
