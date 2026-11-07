@@ -602,6 +602,7 @@ function recNoMes(r, m) {
 }
 function recProxMeses(r, de, k) { const out = []; for (let m = de, i = 0; out.length < k && i < 60; m = ymAdd(m, 1), i++) if (recNoMes(r, m)) out.push(m); return out; }
 function recFreqTxt(r) { if (Array.isArray(r.meses) && r.meses.length) return r.meses.length === 12 ? 'todo mês' : 'em ' + r.meses.map(n => MES3[n - 1]).join(', '); const n = Number(r.cada) || 1; return n <= 1 ? 'todo mês' : n === 12 ? 'uma vez por ano' : `a cada ${n} meses`; }
+function recData(r, m) { return r.diaUtil5 ? quintoDiaUtil(m) : `${m}-${pad(Math.min(r.dia || 1, 28))}`; } // dia fixo ou 5º dia útil
 function recValor(r, m) {
   if (r.pctDe) { const b = S.recs.get(r.pctDe); if (b) return round2(recValor(b, m) * (Number(r.pct) || 0) / 100); }
   let v = Number(r.valor) || 0;
@@ -641,7 +642,7 @@ function engine() {
     let m = r.inicio < start ? start : r.inicio;
     const last = r.fim && r.fim < end ? r.fim : end;
     while (m <= last) {
-      if (recNoMes(r, m) && !recLinks.has(rid + '|' + m)) push(m, {id:'v:' + rid + ':' + m, virtual:true, recorrencia:rid, tipo:r.tipo, titular:r.titular, competencia:m, data:`${m}-${pad(Math.min(r.dia || 1, 28))}`, valor:recValor(r, m), descricao:r.descricao, categoria:r.categoria, meio:r.meio || 'conta', status:'previsto', fornecedor:r.fornecedor || '', natureza:r.natureza || 'recorrente', controle:r.controle || null, caixinha:r.caixinha || null, envelope:!!r.envelope});
+      if (recNoMes(r, m) && !recLinks.has(rid + '|' + m)) push(m, {id:'v:' + rid + ':' + m, virtual:true, recorrencia:rid, tipo:r.tipo, titular:r.titular, competencia:m, data:recData(r, m), valor:recValor(r, m), descricao:r.descricao, categoria:r.categoria, meio:r.meio || 'conta', status:'previsto', fornecedor:r.fornecedor || '', natureza:r.natureza || 'recorrente', controle:r.controle || null, caixinha:r.caixinha || null, envelope:!!r.envelope});
       m = ymAdd(m, 1);
     }
   }
@@ -2721,7 +2722,7 @@ function closeModal() { $('#modal').innerHTML = ''; S.form = null; S.recForm = n
 function openRec(id) {
   const r = id ? S.recs.get(id) : null;
   S.recForm = {id, tipo: r?.tipo || 'saida', descricao: r?.descricao || '', fornecedor: r?.fornecedor || '', natureza: r?.natureza || 'recorrente', categoria: r?.categoria || '', valor: r ? String(r.valor).replace('.', ',') : '', titular: r?.titular || (S.tit === 'casal' ? 'nycolas' : S.tit), meio: r?.meio || 'conta', dia: r?.dia || 5, inicio: r?.inicio || HOJE_YM, fim: r?.fim || '', ativo: r ? r.ativo !== false : true,
-    freq: r?.parcelas ? 'parcelas' : r?.fim ? 'ate' : 'sem-fim', parcelas: r?.parcelas || 12, rep: r?.meses?.length ? 'meses' : String(r?.cada || 1), meses: r?.meses || [], reajMes: r?.reajuste?.mes || '', reajPct: r?.reajuste?.pct ?? '', reajDesde: r?.reajuste?.desde || '', controle: r?.controle || '', caixinha: r?.caixinha || ''};
+    freq: r?.parcelas ? 'parcelas' : r?.fim ? 'ate' : 'sem-fim', parcelas: r?.parcelas || 12, rep: r?.meses?.length ? 'meses' : String(r?.cada || 1), meses: r?.meses || [], diaUtil5: !!r?.diaUtil5, reajMes: r?.reajuste?.mes || '', reajPct: r?.reajuste?.pct ?? '', reajDesde: r?.reajuste?.desde || '', controle: r?.controle || '', caixinha: r?.caixinha || ''};
   drawRec();
 }
 function drawRec() {
@@ -2746,7 +2747,7 @@ function drawRec() {
       <div class="field"><label for="rc-rjp">% do reajuste</label><input class="input num" id="rc-rjp" inputmode="decimal" placeholder="IPCA estimado (${ipca().toLocaleString('pt-BR')}%)" value="${String(R.reajPct).replace('.', ',')}" data-r="reajPct" ${R.reajMes ? '' : 'disabled'}></div>
       <div class="field"><label for="rc-rjd">A partir do ano</label><input class="input num" type="number" id="rc-rjd" placeholder="o próximo" value="${R.reajDesde}" data-r="reajDesde" ${R.reajMes ? '' : 'disabled'}></div></div>
       <div class="fields2"><div class="field"><label for="rc-ctl">Valor calculado por um controle</label><select class="input" id="rc-ctl" data-r="controle">${[['', 'Não, valor fixo'], ['energia', 'Energia (leituras)'], ['transporte', 'Transporte (dias × tarifa)'], ['marmitas', 'Marmitas (quantidade × preço)']].map(([v, n]) => `<option value="${v}" ${R.controle === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-      <div class="field"><label for="rc-dia">Dia do mês</label><input class="input" type="number" min="1" max="28" id="rc-dia" value="${R.dia}" data-r="dia"></div></div>
+      <div class="field"><label for="rc-dia">Dia do mês</label><input class="input" type="number" min="1" max="28" id="rc-dia" value="${R.dia}" data-r="dia" ${R.diaUtil5 ? 'disabled' : ''}><label class="switch" style="margin-top:6px"><input type="checkbox" data-r="diaUtil5" ${R.diaUtil5 ? 'checked' : ''}>5º dia útil</label></div></div>
       <div class="fields2"><div class="field"><label for="rc-forn">Fornecedor</label><input class="input" id="rc-forn" list="dl-rforn" value="${esc(R.fornecedor)}" data-r="fornecedor"><datalist id="dl-rforn">${[...fornecedores().keys()].sort().map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
       <div class="field"><label for="rc-nat">Natureza</label><select class="input" id="rc-nat" data-r="natureza">${NATUREZAS.filter(n => !['avulso', 'ajuste'].includes(n[0])).map(([id, n]) => `<option value="${id}" ${id === R.natureza ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
       <label class="switch"><input type="checkbox" id="rc-ativo" data-r="ativo" ${R.ativo ? 'checked' : ''}>Ativa</label>` : ''}
@@ -2767,7 +2768,7 @@ async function submitRec() {
   if (fim && fim < R.inicio) return toast('O mês final precisa ser depois do início.');
   const old = R.id ? S.recs.get(R.id) || {} : {};
   const pct = parseValor(R.reajPct);
-  const ok = await put('recorrencias', R.id || 'rc-' + uid(), {...old, tipo: R.tipo, descricao: R.descricao.trim(), fornecedor: (R.fornecedor || '').trim(), natureza: R.natureza, categoria: R.categoria, valor: round2(v), titular: R.titular, meio: R.meio, dia: Number(R.dia) || 1, inicio: R.inicio, fim,
+  const ok = await put('recorrencias', R.id || 'rc-' + uid(), {...old, tipo: R.tipo, descricao: R.descricao.trim(), fornecedor: (R.fornecedor || '').trim(), natureza: R.natureza, categoria: R.categoria, valor: round2(v), titular: R.titular, meio: R.meio, dia: Number(R.dia) || 1, diaUtil5: !!R.diaUtil5, inicio: R.inicio, fim,
     cada: R.rep !== 'meses' && Number(R.rep) > 1 ? Number(R.rep) : null, meses: R.rep === 'meses' && (R.meses || []).length ? R.meses : null,
     parcelas: R.freq === 'parcelas' ? Number(R.parcelas) || 1 : null, reajuste: R.reajMes ? {mes: Number(R.reajMes), pct: isNaN(pct) ? null : pct, desde: Number(R.reajDesde) || null, indice: isNaN(pct) ? 'IPCA' : 'fixo'} : null, caixinha: R.caixinha || null, controle: R.controle || null, ativo: !!R.ativo});
   if (ok) { closeModal(); toast('Recorrência salva.'); }
@@ -3017,7 +3018,7 @@ document.addEventListener('input', e => {
   }
   if (t.dataset.x && S.cxForm) { S.cxForm[t.dataset.x] = t.type === 'checkbox' ? t.checked : t.value; return; }
   if (t.dataset.rmes && S.recForm) { const n = Number(t.dataset.rmes), s = new Set(S.recForm.meses || []); t.checked ? s.add(n) : s.delete(n); S.recForm.meses = [...s].sort((a, b) => a - b); return; }
-  if (t.dataset.r && S.recForm) { const k = t.dataset.r; S.recForm[k] = t.type === 'checkbox' ? t.checked : t.value; if (k === 'titular') S.recForm.meio = 'conta'; if (['titular', 'freq', 'reajMes', 'controle', 'meio', 'rep'].includes(k) || (k === 'parcelas' && S.recForm.freq === 'parcelas') || (k === 'inicio' && S.recForm.freq === 'parcelas')) { drawRec(); const f = document.getElementById(t.id); if (f && f.type !== 'select-one') { f.focus(); } } return; }
+  if (t.dataset.r && S.recForm) { const k = t.dataset.r; S.recForm[k] = t.type === 'checkbox' ? t.checked : t.value; if (k === 'titular') S.recForm.meio = 'conta'; if (['titular', 'freq', 'reajMes', 'controle', 'meio', 'rep', 'diaUtil5'].includes(k) || (k === 'parcelas' && S.recForm.freq === 'parcelas') || (k === 'inicio' && S.recForm.freq === 'parcelas')) { drawRec(); const f = document.getElementById(t.id); if (f && f.type !== 'select-one') { f.focus(); } } return; }
   if (t.dataset.d && S.divForm) { S.divForm[t.dataset.d] = t.type === 'checkbox' ? t.checked : t.value; return; }
   if (t.dataset.fo) { if (t.dataset.fo === 'busca') { S.fornBusca = t.value; clearTimeout(S._ft); S._ft = setTimeout(() => { render(); const b = $('#fo-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); } else if (t.dataset.fo === 'todos') { S.fornTodos = t.checked; render(); } else { S.fornNat = t.value; render(); } return; }
   if (t.dataset.filtro) { S.filtro[t.dataset.filtro] = t.value; if (t.dataset.filtro === 'busca') { clearTimeout(S._bt); S._bt = setTimeout(() => { render(); const b = $('#f-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); } else render(); return; }
