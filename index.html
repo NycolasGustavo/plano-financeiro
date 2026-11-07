@@ -516,6 +516,12 @@ details.help p{margin:0 0 6px}
 .dst-l.tot span,.dst-l.tot b{font-weight:600}
 .dst-l.tot.neg b{color:var(--neg)}
 .in-alert.sobra{display:flex;flex-direction:column;gap:4px;background:var(--pos-soft)}
+.of-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 24px}
+.of-kv{display:flex;flex-direction:column;gap:2px;min-width:0}
+.of-kv span{font-size:12px;color:var(--muted)}
+.of-kv b{font-weight:500;overflow-wrap:anywhere}
+.of-kv code{font-size:12px}
+.in-cx .n small + small{margin-top:1px}
 /* descrições em até duas linhas no Início */
 .in-tx b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 /* tabelas que viram cartões no celular */
@@ -606,6 +612,7 @@ const parseValor = s => { if (typeof s === 'number') return s; s = String(s || '
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const ICON = {
+  openfinance: '<path d="M3 8.5 10 4l7 4.5M4.5 8.5v6M8 8.5v6M12 8.5v6M15.5 8.5v6M3 16.5h14"/><circle cx="15.5" cy="4.5" r="2" fill="currentColor" stroke="none"/>',
   banco:'<path d="M3 8.5 10 4l7 4.5M4.5 9v6M8 9v6M12 9v6M15.5 9v6M3 16.5h14"/>',
   inicio:'<path d="M3 9.5 10 3.5l7 6V17h-4.5v-4.5h-5V17H3z"/>',
   mais:'<circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/>',
@@ -1057,8 +1064,8 @@ function startSubs(db) {
 let rafId = 0; function renderSoon() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(render); }
 
 /* ============ render: moldura ============ */
-const VIEWS = [['inicio','Início'],['banco','Conferir banco'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['ajustes','Ajustes']];
-const NAV_GRUPOS = [['Dia a dia', ['inicio', 'lanc', 'banco']], ['Planejamento', ['painel', 'fluxo', 'orcamento', 'recs']], ['Patrimônio', ['cartoes', 'caixinhas', 'dividas']], ['Rotinas', ['controles', 'compras', 'fornecedores', 'importar', 'ajustes']]];
+const VIEWS = [['inicio','Início'],['banco','Conferir banco'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['openfinance','Open Finance'],['ajustes','Ajustes']];
+const NAV_GRUPOS = [['Dia a dia', ['inicio', 'lanc', 'banco']], ['Planejamento', ['painel', 'fluxo', 'orcamento', 'recs']], ['Patrimônio', ['cartoes', 'caixinhas', 'dividas']], ['Rotinas', ['controles', 'compras', 'fornecedores', 'importar', 'openfinance', 'ajustes']]];
 const vNome = k => VIEWS.find(v => v[0] === k)?.[1] || k;
 const navBtn = k => `<button class="nav-btn" data-act="nav" data-v="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${svgI(k)}${vNome(k)}</button>`;
 function renderRail() {
@@ -1069,7 +1076,7 @@ function renderRail() {
 }
 function renderBar() {
   const tits = [...C().titulares.map(t => [t.id, t.nome]), ['casal', 'Casal']];
-  const showMonth = !['inicio', 'banco', 'recs', 'dividas', 'caixinhas', 'importar', 'ajustes'].includes(S.view);
+  const showMonth = !['inicio', 'banco', 'recs', 'dividas', 'caixinhas', 'importar', 'openfinance', 'ajustes'].includes(S.view);
   $('#bar').innerHTML = `
     ${showMonth ? `<div class="month"><button class="icon-btn" data-act="mes" data-d="-1" aria-label="Mês anterior">‹</button><h1>${ymLong(S.mes)}</h1><button class="icon-btn" data-act="mes" data-d="1" aria-label="Próximo mês">›</button>
     ${S.mes !== HOJE_YM ? `<button class="btn ghost sm" data-act="hoje">Hoje</button>` : ''}</div>` : `<h1 style="font-size:24px">${VIEWS.find(v => v[0] === S.view)[1]}</h1>`}
@@ -1083,7 +1090,7 @@ function render() {
   renderRail(); renderBar(); renderTabbar();
   $('#fab').hidden = !S.db || S.readOnly;
   const v = $('#view');
-  const fn = {inicio: vInicio, banco: vBanco, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
+  const fn = {inicio: vInicio, banco: vBanco, openfinance: vOpenFinance, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
   v.innerHTML = fn();
   if (S.view === 'importar') bindDrop();
 }
@@ -1174,6 +1181,70 @@ async function impAplica(id, sgOver) {
   }
   return false;
 }
+/* ============ Open Finance: defasagem e página de conexão ============ */
+const PG_SYNC_HORAS = ['07:15', '19:15']; // pg_cron pluggy-sync-diario (15 10,22 * * * UTC)
+function defas(iso) { // horas desde a última leitura do banco pela Pluggy
+  if (!iso) return null; const h = (Date.now() - new Date(iso).getTime()) / 36e5; if (!(h >= 0)) return null;
+  const txt = h < 1 ? 'há menos de 1 h' : h < 48 ? `há ${Math.floor(h)} h` : `há ${Math.floor(h / 24)} dias`;
+  return {h, txt, cls: h >= 36 ? 'neg' : h >= 24 ? 'warn' : 'pos'};
+}
+const dtHr = iso => iso ? new Date(iso).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '–';
+const dtDia = iso => iso ? new Date(iso).toLocaleDateString('pt-BR') : '–';
+function defasTag(iso) { const d = defas(iso); return d ? `dados do banco de ${dtHr(iso)} · <span class="${d.cls}">${d.txt}</span>` : 'sem data de atualização'; }
+function proxSync() { const n = new Date(); for (let k = 0; k < 2; k++) for (const hm of PG_SYNC_HORAS) { const d = new Date(n); d.setDate(d.getDate() + k); const [h, m] = hm.split(':'); d.setHours(+h, +m, 0, 0); if (d > n) return d; } return null; }
+function pgItens() { // agrupa as contas por item (conexão), com o nome que a config dá a cada item
+  const cfg = S.pgCfg.config || {}, nomes = cfg.itensNomes || {}, by = new Map();
+  for (const [id, c] of S.pgContas) { const k = c.itemId || '?'; if (!by.has(k)) by.set(k, {id: k, nome: nomes[k] || k.slice(0, 8), contas: [], status: c.itemStatus, atualizado: c.itemAtualizado, consent: c.consentimentoAte, lido: c.atualizadoEm}); const g = by.get(k); g.contas.push({id, ...c}); if (c.atualizadoEm > (g.lido || '')) g.lido = c.atualizadoEm; }
+  for (const k of cfg.items || []) if (!by.has(k)) by.set(k, {id: k, nome: nomes[k] || k.slice(0, 8), contas: [], status: null});
+  return [...by.values()].sort((a, b) => (b.contas.some(c => c.titular) ? 1 : 0) - (a.contas.some(c => c.titular) ? 1 : 0) || a.nome.localeCompare(b.nome));
+}
+function vOpenFinance() {
+  const cfg = S.pgCfg.config || {}, st = S.pgCfg.status, itens = pgItens(), nx = proxSync();
+  const meioN = m => m ? (m === 'conta' ? 'Conta' : meioNome(m)) : '–';
+  const janela = cfg.diasJanela || 45, desdeCfg = cfg.desde || null;
+  const kv = (k, v) => `<div class="of-kv"><span>${k}</span><b>${v}</b></div>`;
+  return `<div class="stack" style="max-width:980px">
+    <section class="panel"><div class="panel-head"><h3>Sincronização</h3>${S.sb && !S.readOnly ? '<button class="btn sm" data-act="pgSync">Buscar agora</button>' : ''}</div>
+      <div class="of-grid">
+        ${kv('Última leitura do app', st ? `${dtHr(st.ultimaSync)}${st.ok ? '' : ' · <span class="neg">com falha</span>'}` : 'nunca')}
+        ${kv('Próxima leitura automática', nx ? dtHr(nx.toISOString()) : '–')}
+        ${kv('Agenda', PG_SYNC_HORAS.join(' e ') + ' (todos os dias)')}
+        ${kv('Janela de busca', `últimos ${janela} dias${desdeCfg ? `, nunca antes de ${dtDia(desdeCfg + 'T12:00:00')}` : ''}`)}
+      </div>
+      ${st && !st.ok ? `<p class="neg" style="margin:10px 0 0;font-size:13px">${esc(st.erro || (st.erros || []).map(e => e.erro).join(' · '))}</p>` : ''}
+      ${st?.erros?.length && st.ok ? `<p class="warn" style="margin:10px 0 0;font-size:13px">Itens com erro: ${st.erros.map(e => esc((cfg.itensNomes || {})[e.itemId] || e.itemId)).join(', ')}</p>` : ''}
+      <details class="help" style="margin:12px 0 0"><summary>Por que um gasto de ontem ainda não aparece?</summary>
+        <p>São duas etapas. Primeiro a Pluggy consulta o banco por conta própria, cerca de uma vez por dia. Depois o app lê da Pluggy às ${PG_SYNC_HORAS.join(' e ')} (ou no "Buscar agora"). O app só enxerga o que a Pluggy já trouxe do banco.</p>
+        <p>O app não consegue forçar essa leitura: conexões pelo Meu Pluggy recusam o pedido ("MeuPluggy item cant be updated"). Para trazer um gasto recente, abra o app Meu Pluggy, toque em atualizar na conexão do banco e, depois que terminar, use "Buscar agora" aqui.</p></details>
+    </section>
+    <section class="panel"><div class="panel-head"><h3>Conexões</h3><span class="muted" style="font-size:12.5px">${itens.length} conexões · Meu Pluggy</span></div>
+      <div class="tbl-wrap"><table class="mc"><thead><tr><th>Conexão</th><th>Situação</th><th>Banco lido pela Pluggy</th><th>Defasagem</th><th>Consentimento até</th></tr></thead><tbody>
+      ${itens.map(g => { const d = defas(g.atualizado); return `<tr><td class="m-main"><b>${esc(g.nome)}</b><small class="muted" style="display:block;font-size:11.5px">${esc(g.id)}</small></td>
+        <td class="m-sub">${g.status ? `<span class="chip ${g.status === 'UPDATED' ? 'ok' : 'neg'}">${g.status === 'UPDATED' ? 'Conectado' : esc(g.status)}</span>` : '<span class="chip neg">sem dados</span>'}</td>
+        <td class="num m-sub">${dtHr(g.atualizado)}</td>
+        <td class="m-val">${d ? `<b class="${d.cls}">${d.txt}</b>` : '–'}</td>
+        <td class="num m-sub">${g.consent ? '<span class="only-m">consentimento até </span>' + dtDia(g.consent) : '–'}</td></tr>`; }).join('')}
+      </tbody></table></div>
+      <p class="muted" style="font-size:12px;margin:8px 2px 0">Verde: até 24 h · amarelo: 24 a 36 h · vermelho: mais de 36 h sem leitura do banco.</p>
+    </section>
+    <section class="panel"><div class="panel-head"><h3>Contas e vínculos</h3><span class="muted" style="font-size:12.5px">como cada conta do banco entra no app</span></div>
+      <div class="tbl-wrap"><table class="mc"><thead><tr><th>Conta</th><th>Conexão</th><th>Titular</th><th>Meio no app</th><th class="r">Saldo / usado</th><th>Lido pelo app</th></tr></thead><tbody>
+      ${itens.flatMap(g => g.contas.map(c => `<tr><td class="m-main"><b>${esc(c.marketingName || c.nome)}</b><small class="muted" style="display:block;font-size:11.5px">${c.tipo === 'CREDIT' ? 'cartão' : 'conta'}${c.numero ? ' · ' + esc(c.numero) : ''}${c.limite ? ` · limite ${fmt(c.limite)}` : ''}</small></td>
+        <td class="m-sub">${esc(g.nome)}</td><td class="m-sub">${c.titular ? esc(titNome(c.titular)) : '<span class="muted">sem uso</span>'}</td><td class="m-sub">${esc(meioN(c.meio))}</td>
+        <td class="r num m-val">${fmt(c.saldo)}</td><td class="num muted m-sub">${dtHr(c.atualizadoEm)}</td></tr>`)).join('')}
+      </tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><h3>Infraestrutura</h3><span class="muted" style="font-size:12.5px">referência técnica</span></div>
+      <div class="of-grid">
+        ${kv('Projeto Supabase', 'plano-financeiro · ptxkcvfrsmtfkavgetog (São Paulo)')}
+        ${kv('Função de sincronização', 'Edge Function <code>pluggy-sync</code>')}
+        ${kv('Agendamento', '<code>pluggy-sync-diario</code> · pg_cron <code>15 10,22 * * *</code> (UTC)')}
+        ${kv('Segredos da função', '<code>PLUGGY_CLIENT_ID</code>, <code>PLUGGY_CLIENT_SECRET</code>')}
+        ${kv('Onde os dados ficam', '<code>pluggyContas</code> (saldos) · <code>importados</code> (fila de conferência) · <code>pluggy/config</code>, <code>pluggy/status</code>')}
+        ${kv('Itens configurados', String((cfg.items || []).length))}
+        ${Object.keys(cfg.desdeItem || {}).length ? kv('Histórico estendido', Object.entries(cfg.desdeItem).map(([k, v]) => `${esc((cfg.itensNomes || {})[k] || k.slice(0, 8))} desde ${dtDia(v + 'T12:00:00')}`).join(' · ')) : ''}
+      </div></section>
+  </div>`;
+}
 function vBanco() {
   const L = impLista(), st = S.pgCfg.status, contas = [...S.pgContas.values()].sort((a, b) => (a.titular ? 0 : 1) - (b.titular ? 0 : 1));
   const sugTxt = ({imp, sg}) => {
@@ -1193,7 +1264,7 @@ function vBanco() {
   return `<div class="in">
     <section class="in-hero"><span class="eyebrow">Open Finance · Meu Pluggy</span>
       <div class="in-proj" style="margin-top:6px">${st ? (st.ok ? `Última sincronização: <b>${new Date(st.ultimaSync).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}</b>` : `<span class="neg">Falha na última sincronização: ${esc(st.erro || '')}</span>`) : 'Ainda não sincronizado.'}</div>
-      <p class="muted" style="font-size:12.5px;margin:6px 0 0">O banco atualiza os dados para a Pluggy cerca de uma vez por dia. O app busca às 7h15 e às 19h15.</p>
+      ${(() => { const its = pgItens().filter(g => g.contas.some(c => c.titular)); const pior = its.reduce((m, g) => { const d = defas(g.atualizado); return d && (!m || d.h > m.h) ? d : m; }, null); return pior ? `<p style="font-size:13px;margin:6px 0 0">Dado mais antigo do banco: <b class="${pior.cls}">${pior.txt}</b>. A Pluggy lê cada banco cerca de uma vez por dia; o app busca às ${PG_SYNC_HORAS.join(' e ')}. Para algo recente: atualize no app Meu Pluggy e depois toque em "Buscar agora". <a href="#" data-act="nav" data-v="openfinance">Detalhes</a></p>` : ''; })()}
       ${S.sb && !S.readOnly ? `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="pgSync">Buscar agora</button>${aplicaveis.length ? `<button class="btn sm primary" data-act="impTodos">Confirmar ${aplicaveis.length} sugest${aplicaveis.length > 1 ? 'ões' : 'ão'} automáticas</button>` : ''}</div>` : ''}
     </section>
     <section class="in-sec"><div class="in-sec-h"><h2>Saldos no banco</h2></div><div class="in-list">${contas.filter(c => c.titular).map(c => {
@@ -1202,10 +1273,10 @@ function vBanco() {
         const irmas = contas.filter(o => o.tipo === 'BANK' && o.meio === 'conta' && o.titular === c.titular);
         if (irmas[irmas.length - 1] === c) { const P = ponte(HOJE_YM, c.titular); app = P?.hoje ?? null;
           if (app != null && irmas.length > 1) { const soma = round2(irmas.reduce((a, o) => a + Number(o.saldo || 0), 0)); dif = round2(soma - app);
-            return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · conta</small></span><span class="r"><b>${fmt(c.saldo)}</b><small>soma dos bancos ${fmt(soma)} · ${Math.abs(dif) < 0.011 ? '<span class="pos">igual ao app</span>' : `app ${fmt(app)} · <span class="${dif < 0 ? 'neg' : 'warn'}">dif. ${fmtS(dif)}</span>`}</small></span></div>`; } } }
+            return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · conta</small><small>${defasTag(c.itemAtualizado)}</small></span><span class="r"><b>${fmt(c.saldo)}</b><small>soma dos bancos ${fmt(soma)} · ${Math.abs(dif) < 0.011 ? '<span class="pos">igual ao app</span>' : `app ${fmt(app)} · <span class="${dif < 0 ? 'neg' : 'warn'}">dif. ${fmtS(dif)}</span>`}</small></span></div>`; } } }
       else if (c.tipo === 'CREDIT') { const cd = cardById(c.meio); if (cd) { const Lc = limiteCartao(cd); app = round2(Lc.usado); } }
       if (app != null) dif = round2(Number(c.saldo) - app);
-      return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · ${c.tipo === 'CREDIT' ? 'cartão (usado)' : 'conta'}${c.limite ? ` · limite ${fmt(c.limite)}` : ''}</small></span>
+      return `<div class="in-cx"><span class="n"><b>${esc(c.marketingName || c.nome)}</b><small>${esc(titNome(c.titular))} · ${c.tipo === 'CREDIT' ? 'cartão (usado)' : 'conta'}${c.limite ? ` · limite ${fmt(c.limite)}` : ''}</small><small>${defasTag(c.itemAtualizado)}</small></span>
         <span class="r"><b>${fmt(c.saldo)}</b><small>${app == null ? '' : Math.abs(dif) < 0.011 ? '<span class="pos">igual ao app</span>' : `app ${fmt(app)} · <span class="${dif < 0 ? 'neg' : 'warn'}">dif. ${fmtS(dif)}</span>`}</small></span></div>`; }).join('') || '<div class="in-empty">Nenhuma conta associada.</div>'}</div>
       ${contas.some(c => !c.titular) ? `<p class="muted" style="font-size:12px;margin:0 2px">Também conectadas, sem uso no app: ${contas.filter(c => !c.titular).map(c => esc(c.marketingName || c.nome)).join(', ')}.</p>` : ''}</section>
     <section class="in-sec"><div class="in-sec-h"><h2>Para conferir</h2><span class="muted" style="font-size:12.5px">${vis.length} transaç${vis.length === 1 ? 'ão' : 'ões'}</span></div>
