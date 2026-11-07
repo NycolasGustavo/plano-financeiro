@@ -104,9 +104,24 @@ h2{font-size:20px} h3{font-size:15px}
 .cp-chk span{display:flex;flex-direction:column;min-width:0}.cp-chk b{font-weight:500}.cp-chk small{font-size:12px}
 .cp-q{width:76px;padding:5px 8px}.cp-v{text-align:right;font-size:13px}
 .cp-tirar{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cp-mk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
+.cp-mk:first-of-type{border-top:0}
+.cp-mk.ok .cp-chk b{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--pos)}
+.cp-mk.ok{background:linear-gradient(90deg,transparent,var(--pos-soft) 160%)}
+.cp-mk-f{display:grid;grid-template-columns:64px 74px 92px 86px;gap:6px;align-items:end}
+.cp-mk-f label{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cp-mk-f label span{font-size:11px;color:var(--muted)}
+.cp-mk-f .input{padding:7px 8px;min-width:0;width:100%;font-size:15px}
+.cp-mk-f select.input{padding:7px 22px 7px 8px}
+.cp-mk-t{text-align:right;font-weight:600;padding-bottom:8px}
+.cp-extra{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:12px}
+.cp-extra-f{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 64px 74px 92px auto;gap:6px;margin-top:8px}
+.cp-extra-f .input{min-width:0;width:100%}
+.cp-meta-btn{all:unset;cursor:pointer;font:inherit;color:inherit;border-bottom:1px dashed var(--muted)}
+.cp-bar small{font-size:11.5px}
 .cp-bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);margin:12px -18px -18px;padding:12px 18px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;border-radius:0 0 var(--r) var(--r);z-index:2}
 .cp-bar div{display:flex;flex-direction:column}.cp-bar b{font-size:17px}
-@media (max-width:760px){.cp-fontes{grid-template-columns:1fr}.cp-it{grid-template-columns:minmax(0,1fr) 64px 78px}.cp-q{width:64px}.cp-bar{gap:4px 14px;bottom:76px;padding:10px 14px;margin:12px -18px -18px;box-shadow:0 -6px 16px rgba(0,0,0,.06)}.cp-bar .eyebrow{font-size:11.5px}.cp-bar b{font-size:15px}.cp-bar .lbl-long{display:none}.cp-bar>span{margin-left:0!important;width:100%;flex-wrap:nowrap!important}.cp-bar>span .btn{flex:1;padding:6px 10px}}
+@media (max-width:760px){.cp-mk{grid-template-columns:1fr}.cp-mk-f{grid-template-columns:62px 72px minmax(0,1fr) 84px}.cp-extra-f{grid-template-columns:1fr 1fr}.cp-extra-f #cpx-nome{grid-column:1/-1}.cp-extra-f .btn{grid-column:1/-1}.cp-merc .cp-bar div{min-width:0}.cp-fontes{grid-template-columns:1fr}.cp-it{grid-template-columns:minmax(0,1fr) 64px 78px}.cp-q{width:64px}.cp-bar{gap:4px 14px;bottom:76px;padding:10px 14px;margin:12px -18px -18px;box-shadow:0 -6px 16px rgba(0,0,0,.06)}.cp-bar .eyebrow{font-size:11.5px}.cp-bar b{font-size:15px}.cp-bar .lbl-long{display:none}.cp-bar>span{margin-left:0!important;width:100%;flex-wrap:nowrap!important}.cp-bar>span .btn{flex:1;padding:6px 10px}}
 /* placar de caixa */
 .placar{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .placar .pl-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px 4px}
@@ -1076,7 +1091,10 @@ function startSubs(db) {
   db.collection('pluggyContas').limit(50).onSnapshot(snap => { S.pgContas = new Map(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, () => {});
   db.collection('pluggy').limit(10).onSnapshot(snap => { S.pgCfg = Object.fromEntries(snap.docs.map(d => [d.id, d.data()])); renderSoon(); }, () => {});
 }
-let rafId = 0; function renderSoon() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(render); }
+let rafId = 0; function renderSoon() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(() => { if (cpEditando()) { S._renderPend = true; cpBarRefresh(); return; } render(); }); }
+// no modo mercado, não redesenha enquanto alguém digita num campo da lista (o redesenho tiraria o foco)
+function cpEditando() { const a = document.activeElement; return !!(a && a.closest && a.closest('.cp-mk, .cp-extra') && /INPUT|SELECT/.test(a.tagName)); }
+document.addEventListener('focusout', () => { setTimeout(() => { if (S._renderPend && !cpEditando()) { S._renderPend = false; render(); } }, 400); });
 
 /* ============ render: moldura ============ */
 const VIEWS = [['inicio','Início'],['banco','Conferir banco'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['openfinance','Open Finance'],['ajustes','Ajustes']];
@@ -2201,7 +2219,61 @@ function cpVaiPadrao(i, f) {
 }
 function cpItens() { return [...S.compraItens].filter(([, i]) => i.ativo !== false).map(([id, i]) => ({...i, _id: id})); }
 function cpAberta() { return [...S.compras].find(([, c]) => c.status === 'planejando'); }
-function cpEst(i, l) { return round2((Number(l?.qtd ?? i.qtdPadrao) || 0) * (Number(i.preco) || 0)); }
+function cpEst(i, l) { return round2((Number(l?.qtd ?? i.qtdPadrao) || 0) * (Number(l?.preco ?? i.preco) || 0)); }
+const CP_UNS = ['un', 'pct', 'cx', 'kg', 'g', 'L', 'dz', 'fardo'];
+const cpUn = (i, l) => l?.un || i.unidade || 'un';
+// calculadora da compra em andamento: o que já está no carrinho (preço digitado ou último preço) + o que falta pegar
+function cpCalc(c, itens) {
+  const sel = c.itens || {}; let carr = 0, falta = 0, semPreco = 0, nCarr = 0, nFalta = 0, estimados = 0;
+  for (const i of itens) { const l = sel[i._id]; if (!l?.vai) continue; const v = cpEst(i, l);
+    if (l.ok) { carr += v; nCarr++; if (l.preco == null) estimados++; } else { falta += v; nFalta++; }
+    if (!(Number(l.preco ?? i.preco) > 0)) semPreco++; }
+  carr = round2(carr); falta = round2(falta);
+  return {carr, falta, total: round2(carr + falta), nCarr, nFalta, semPreco, estimados};
+}
+function cpMeta(c, f) { const o = cpOrc(f); return c.meta != null ? {v: Number(c.meta), fonte: 'meta'} : {v: o.falta, fonte: 'orcamento', o}; }
+function cpBarHTML(id, c, itens) {
+  const f = cpFonte(c.fonte), K = cpCalc(c, itens), M = cpMeta(c, f), sobra = round2(M.v - K.total), merc = c.modo === 'mercado';
+  return `<div class="cp-bar" id="cp-bar">
+    ${merc ? `<div><span class="eyebrow">No carrinho</span><b class="num">${fmt(K.carr)}</b><small class="muted">${K.nCarr} ite${K.nCarr === 1 ? 'm' : 'ns'}${K.estimados ? ` · ${K.estimados} sem preço digitado` : ''}</small></div>
+      <div><span class="eyebrow">Falta pegar</span><b class="num">${fmt(K.falta)}</b><small class="muted">${K.nFalta} ite${K.nFalta === 1 ? 'm' : 'ns'}, pelo último preço</small></div>`
+    : `<div><span class="eyebrow">Estimado</span><b class="num">${fmt(K.total)}</b></div>`}
+    <div><span class="eyebrow">Meta<span class="lbl-long"> desta compra</span></span><b class="num"><button class="cp-meta-btn" data-act="cpMetaEd" data-id="${esc(id)}" title="Mudar a meta desta compra">${fmt(M.v)} ✎</button></b><small class="muted">${M.fonte === 'meta' ? 'definida para esta compra' : `previsto no fluxo (${ymShort(M.o.comp)})`}</small></div>
+    <div><span class="eyebrow">${sobra < -0.004 ? 'Passou' : 'Ainda cabe'}</span><b class="num ${sobra < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(sobra))}</b>${merc ? `<small class="muted">projeção com o que falta</small>` : ''}</div>
+    <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" data-act="cpNota" data-id="${esc(id)}">Fechar com a nota</button><button class="btn" data-act="cpFecharValor" data-id="${esc(id)}">Fechar só com o valor</button></span></div>`;
+}
+function cpBarRefresh() { const ab = cpAberta(); const b = $('#cp-bar'); if (!ab || !b) return; b.outerHTML = cpBarHTML(ab[0], ab[1], cpItens()); }
+// modo mercado: só o que está na lista, com quantidade, unidade e preço da embalagem digitados na hora
+function cpMercado(id, c, itens) {
+  const sel = c.itens || {}, q = (S.cpBusca || '').toLowerCase(), ocultar = !!S.cpOcultarOk;
+  const grupos = CP_CATS.map(cat => {
+    const its = itens.filter(i => (i.categoria || 'Mercearia') === cat && sel[i._id]?.vai && (!q || i.nome.toLowerCase().includes(q)));
+    if (!its.length) return ''; const vis = its.filter(i => !(ocultar && sel[i._id]?.ok)); const nOk = its.filter(i => sel[i._id]?.ok).length;
+    return `<div class="cp-grp"><div class="cp-grp-h"><b>${esc(cat)}</b><span class="muted">${nOk}/${its.length} no carrinho</span></div>${vis.map(i => { const l = sel[i._id] || {}, un = cpUn(i, l), ult = Number(i.preco) || 0;
+      return `<div class="cp-mk ${l.ok ? 'ok' : ''}" data-row="${esc(i._id)}">
+        <label class="cp-chk"><input type="checkbox" data-cpok="${esc(i._id)}" ${l.ok ? 'checked' : ''} aria-label="Peguei ${esc(i.nome)}"><span><b>${esc(i.nome)}</b><small class="muted">${ult ? `último: ${fmt(ult)}/${esc(i.unidade || 'un')}` : 'sem preço anterior'}${i.precos?.length > 1 ? ` · ${esc(dm(i.precos[i.precos.length - 1].data))}` : ''}</small></span></label>
+        <div class="cp-mk-f">
+          <label><span>Qtd</span><input class="input num" inputmode="decimal" data-cpq="${esc(i._id)}" value="${String(l.qtd ?? i.qtdPadrao ?? 1).replace('.', ',')}" aria-label="Quantidade de ${esc(i.nome)}"></label>
+          <label><span>Unid.</span><select class="input" data-cpun="${esc(i._id)}" aria-label="Unidade de ${esc(i.nome)}">${[...new Set([un, ...CP_UNS])].map(u => `<option ${u === un ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></label>
+          <label><span>Preço</span><input class="input num" inputmode="decimal" data-cppr="${esc(i._id)}" value="${l.preco != null ? Number(l.preco).toFixed(2).replace('.', ',') : ''}" placeholder="${ult ? String(ult.toFixed(2)).replace('.', ',') : '0,00'}" aria-label="Preço de ${esc(i.nome)}"></label>
+          <span class="cp-mk-t num" data-tot="${esc(i._id)}">${fmt(cpEst(i, l))}</span>
+        </div></div>`; }).join('')}</div>`; }).join('');
+  return `<section class="panel cp-plan cp-merc"><div class="panel-head"><h3>No mercado · ${esc(cpFonte(c.fonte).nome)}</h3>
+      <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="cpModo" data-v="plan">Voltar à lista</button><button class="btn sm ${ocultar ? 'primary' : ''}" data-act="cpOcultarOk">${ocultar ? 'Mostrar pegos' : 'Ocultar pegos'}</button></span></div>
+    <p class="muted" style="margin:-4px 0 10px;font-size:12.5px">Digite o preço da embalagem e a quantidade conforme pega cada item; o item é marcado no carrinho sozinho. Sem preço digitado, vale o último preço pago.</p>
+    <input class="input" id="cp-busca" data-cpbusca="1" placeholder="Buscar na lista" value="${esc(S.cpBusca || '')}" style="width:100%;margin-bottom:8px">
+    <div class="cp-lista">${grupos || '<p class="muted">Nada marcado na lista. Volte à lista e marque o que vai comprar.</p>'}</div>
+    <div class="cp-extra"><b>Item extra</b><div class="cp-extra-f">
+      <input class="input" id="cpx-nome" placeholder="O que pegou" aria-label="Nome do item extra">
+      <select class="input" id="cpx-cat" aria-label="Categoria">${CP_CATS.map(x => `<option ${x === 'Mercearia' ? 'selected' : ''}>${x}</option>`).join('')}</select>
+      <input class="input num" id="cpx-qtd" inputmode="decimal" placeholder="Qtd" value="1" aria-label="Quantidade">
+      <select class="input" id="cpx-un" aria-label="Unidade">${CP_UNS.map(u => `<option>${u}</option>`).join('')}</select>
+      <input class="input num" id="cpx-preco" inputmode="decimal" placeholder="Preço" aria-label="Preço">
+      <button class="btn" data-act="cpExtra">Adicionar ao carrinho</button></div></div>
+    ${cpBarHTML(id, c, itens)}
+  </section>`;
+}
+
 
 function vCompras() {
   const itens = cpItens(); const f = cpFonte(S.cpFonte || 'unix');
@@ -2213,7 +2285,7 @@ function vCompras() {
   const topo = `<div class="cp-fontes">${cards}</div><p class="muted" style="font-size:12.5px;margin:0">O orçamento de cada lugar vem do previsto de mercado no fluxo (categoria Mercado, no meio de pagamento daquele lugar). Para mudar o valor, ajuste o lançamento ou a recorrência.</p>`;
   if (!itens.length) return `<div class="stack">${topo}<div class="panel empty"><h3>Nenhum produto cadastrado ainda</h3><p>Cole uma nota fiscal para começar: os produtos e preços entram sozinhos.</p><button class="btn primary" data-act="cpNota">Colar nota fiscal</button></div></div>`;
   const ab = cpAberta();
-  const corpo = ab ? cpPlanejar(ab[0], ab[1], itens) : `<section class="panel"><div class="panel-head"><h3>Próxima compra</h3></div>
+  const corpo = ab ? (ab[1].modo === 'mercado' ? cpMercado(ab[0], ab[1], itens) : cpPlanejar(ab[0], ab[1], itens)) : `<section class="panel"><div class="panel-head"><h3>Próxima compra</h3></div>
       <p class="muted" style="margin:-4px 0 12px">A lista já vem montada com tudo que vocês costumam comprar. Vocês só desmarcam o que não vai e veem o total na hora.</p>
       <div class="toolbar" style="margin:0"><button class="btn primary" data-act="cpNova">Montar compra no ${esc(f.nome)}</button><button class="btn" data-act="cpNota">Colar nota fiscal de uma compra feita</button></div></section>`;
   return `<div class="stack">${topo}${corpo}${cpHistorico(itens)}${cpCatalogo(itens)}</div>`;
@@ -2222,12 +2294,12 @@ function cpPlanejar(id, c, itens) {
   const f = cpFonte(c.fonte), o = cpOrc(f), sel = c.itens || {};
   const q = (S.cpBusca || '').toLowerCase();
   let est = 0; for (const i of itens) if (sel[i._id]?.vai) est += cpEst(i, sel[i._id]);
-  est = round2(est); const cabe = o.falta;
+  est = round2(est); const cabe = cpMeta(c, f).v;
   const sobra = round2(cabe - est);
   const grupos = CP_CATS.map(cat => { const its = itens.filter(i => (i.categoria || 'Mercearia') === cat && (!q || i.nome.toLowerCase().includes(q))); if (!its.length) return '';
     const sub = round2(its.reduce((s, i) => s + (sel[i._id]?.vai ? cpEst(i, sel[i._id]) : 0), 0));
     return `<div class="cp-grp"><div class="cp-grp-h"><b>${esc(cat)}</b><span class="muted num">${sub ? fmt(sub) : ''}</span></div>${its.map(i => { const l = sel[i._id] || {}; const vai = !!l.vai;
-      return `<div class="cp-it ${vai ? '' : 'off'}"><label class="cp-chk"><input type="checkbox" data-cpvai="${esc(i._id)}" ${vai ? 'checked' : ''}><span><b>${esc(i.nome)}</b><small class="muted">${esc(CP_FREQ[i.freq] || '')}${i.perecivel ? ' · perecível' : ''}${i.preco ? ` · ${fmt(i.preco)}/${esc(i.unidade || 'un')}` : ' · sem preço ainda'}</small></span></label>
+      return `<div class="cp-it ${vai ? '' : 'off'}"><label class="cp-chk"><input type="checkbox" data-cpvai="${esc(i._id)}" ${vai ? 'checked' : ''}><span><b>${esc(i.nome)}</b><small class="muted">${esc(CP_FREQ[i.freq] || '')}${i.perecivel ? ' · perecível' : ''}${i.preco ? ` · ${fmt(i.preco)}/${esc(cpUn(i, l))}` : ' · sem preço ainda'}</small></span></label>
         <input class="input num cp-q" type="number" min="0" step="${i.unidade === 'kg' || i.unidade === 'L' ? '0.5' : '1'}" data-cpq="${esc(i._id)}" value="${l.qtd ?? i.qtdPadrao ?? 1}" aria-label="Quantidade de ${esc(i.nome)}" ${vai ? '' : 'disabled'}>
         <span class="num cp-v">${vai ? fmt(cpEst(i, l)) : ''}</span></div>`; }).join('')}</div>`; }).join('');
   // o que dá para tirar se passar
@@ -2240,15 +2312,13 @@ function cpPlanejar(id, c, itens) {
   }
   return `<section class="panel cp-plan"><div class="panel-head"><h3>Compra no ${esc(f.nome)}</h3>
       <span style="display:flex;gap:6px;flex-wrap:wrap"><select class="input" data-cpfonte="${esc(id)}" aria-label="Onde vai comprar">${CP_FONTES.map(x => `<option value="${x.id}" ${x.id === f.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}</select>
-      <button class="btn sm" data-act="cpMarcar" data-v="1">Marcar tudo</button><button class="btn sm" data-act="cpMarcar" data-v="0">Desmarcar tudo</button><button class="btn ghost sm danger" data-act="cpDescartar" data-id="${esc(id)}">Descartar</button></span></div>
+      <button class="btn sm primary" data-act="cpModo" data-v="mercado">Começar a compra</button><button class="btn sm" data-act="cpMarcar" data-v="1">Marcar tudo</button><button class="btn sm" data-act="cpMarcar" data-v="0">Desmarcar tudo</button><button class="btn ghost sm danger" data-act="cpDescartar" data-id="${esc(id)}">Descartar</button></span></div>
     <p class="muted" style="margin:-4px 0 10px;font-size:12.5px">Desmarque o que ainda tem em casa. Preços são o último valor pago${f.id === 'unix' ? '. Hortifrúti começa desmarcado porque vocês compram fresco no mercado da Grazi' : ''}${f.id === 'prazo' ? '. No prazo da Grazi começam marcados só o kit de carne e o hortifrúti' : ''}.</p>
     <input class="input" id="cp-busca" data-cpbusca="1" placeholder="Buscar produto" value="${esc(S.cpBusca || '')}" style="width:100%;margin-bottom:8px">
     ${dicas}
     <div class="cp-lista">${grupos}</div>
     <div class="toolbar" style="margin:10px 0 0"><input class="input" id="cpn-nome" placeholder="Produto que não está na lista" style="flex:1;min-width:160px"><select class="input" id="cpn-cat">${CP_CATS.map(x => `<option>${x}</option>`).join('')}</select><input class="input num" id="cpn-preco" placeholder="Preço" inputmode="decimal" style="width:90px"><button class="btn" data-act="cpAddItem">Adicionar</button></div>
-    <div class="cp-bar"><div><span class="eyebrow">Estimado</span><b class="num">${fmt(est)}</b></div><div><span class="eyebrow">Disponível<span class="lbl-long"> no ${esc(f.nome)}</span></span><b class="num ${cabe < 0 ? 'neg' : ''}">${fmt(cabe)}</b></div>
-      <div><span class="eyebrow">${sobra < -0.004 ? 'Passou' : 'Sobra'}</span><b class="num ${sobra < -0.004 ? 'neg' : 'pos'}">${fmt(Math.abs(sobra))}</b></div>
-      <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" data-act="cpNota" data-id="${esc(id)}">Fechar com a nota</button><button class="btn" data-act="cpFecharValor" data-id="${esc(id)}">Fechar só com o valor</button></span></div>
+    ${cpBarHTML(id, c, itens)}
   </section>`;
 }
 function cpHistorico(itens) {
@@ -2325,26 +2395,38 @@ async function cpRegistrar() {
     const id = 'ci-' + uid(); novosIds[n] = id; itemWrites.push([id, {nome: cpNomeLimpo(n), categoria: cat, unidade: 'un', freq: 'eventual', qtdPadrao: 1, codigos: [], regra: '', ativo: true}]); }
   for (const x of P.itens) if (!x.item && novosIds[x.nome]) x.item = novosIds[x.nome];
   // preço por produto (média ponderada da nota)
-  const agg = {}; for (const x of P.itens) if (x.item) { const a = (agg[x.item] ||= {q: 0, v: 0, cods: new Set()}); a.q += x.qtd; a.v += x.vt; a.cods.add(x.cod); }
+  const agg = {}; for (const x of P.itens) if (x.item) { const a = (agg[x.item] ||= {q: 0, v: 0, cods: new Set()}); a.q += x.qtd; a.v += x.vt; a.cods.add(x.cod); if (x.un) a.un = String(x.un).toLowerCase() === 'kg' ? 'kg' : String(x.un).toLowerCase() === 'un' ? 'un' : String(x.un).toLowerCase(); }
   const cur = new Map(itemWrites);
   for (const [id, a] of Object.entries(agg)) { const base = cur.get(id) || S.compraItens.get(id); if (!base) continue;
     const preco = a.q ? round2(a.v / a.q) : base.preco; const hist = [...(base.precos || []), {data, preco, loja: f.loja}].slice(-12);
-    cur.set(id, {...base, preco, precos: hist, codigos: [...new Set([...(base.codigos || []), ...a.cods])], ultimaCompra: data}); }
+    cur.set(id, {...base, preco, precos: hist, codigos: [...new Set([...(base.codigos || []), ...a.cods])], ultimaCompra: data, ...(a.un ? {unidade: a.un} : {})}); }
   const lid = 'cp-' + uid();
   const lanc = {tipo: 'saida', titular: f.titular, competencia: comp, data, valor: round2(P.pago), descricao: f.meio === 'conta' ? 'Compra de mercado' : 'Compras do mês', fornecedor: f.loja, natureza: 'avulso', categoria: 'mercado', meio: f.meio, status: 'realizado', origem: 'nota'};
   const cid = N.compraId || ('cm-' + uid()); const prev = N.compraId ? S.compras.get(N.compraId) : {};
-  const compra = {...prev, status: 'concluida', fonte: f.id, data, loja: P.loja || f.loja, total: round2(P.pago), bruto: round2(P.bruto), desconto: round2(P.desc), itens: P.itens.map(x => ({item: x.item || null, nome: x.nome, qtd: x.qtd, vt: x.vt})), lancamento: lid};
+  const carrPrev = prev?.itens && !Array.isArray(prev.itens) ? cpCalc(prev, cpItens()) : null;
+  const compra = {...prev, status: 'concluida', fonte: f.id, data, loja: P.loja || f.loja, total: round2(P.pago), bruto: round2(P.bruto), desconto: round2(P.desc), itens: P.itens.map(x => ({item: x.item || null, nome: x.nome, qtd: x.qtd, vt: x.vt})), lancamento: lid, ...(carrPrev && carrPrev.carr > 0 ? {carrinho: carrPrev.carr, lista: prev.itens} : {})};
   closeModal();
   const ok1 = await putMany('compraItens', [...cur.entries()]);
   const ok2 = ok1 && await put('lancamentos', lid, lanc);
   const ok3 = ok2 && await put('compras', cid, compra);
-  if (ok3) toast(`Salvo: ${ondeCai(lanc)} · ${Object.keys(agg).length} preços atualizados`, async () => { await del('lancamentos', lid); if (N.compraId) await put('compras', cid, {...prev}); else await del('compras', cid); });
+  const carr = prev?.itens && !Array.isArray(prev.itens) ? cpCalc(prev, cpItens()) : null;
+  if (ok3) toast(`Salvo: ${ondeCai(lanc)} · ${Object.keys(agg).length} preços atualizados${carr && carr.carr > 0 ? ` · nota ${fmt(P.pago)} x carrinho ${fmt(carr.carr)} (${fmtS(round2(P.pago - carr.carr))})` : ''}`, async () => { await del('lancamentos', lid); if (N.compraId) await put('compras', cid, {...prev}); else await del('compras', cid); });
 }
 async function cpNova() {
   const f = cpFonte(S.cpFonte || 'unix'); const itens = {};
   for (const i of cpItens()) itens[i._id] = {vai: cpVaiPadrao(i, f), qtd: i.qtdPadrao ?? 1};
   await put('compras', 'cm-' + uid(), {status: 'planejando', fonte: f.id, criadaEm: HOJE, itens});
 }
+function openCpMeta(id, v) {
+  const c = S.compras.get(id), f = cpFonte(c?.fonte), o = cpOrc(f);
+  $('#modal').innerHTML = `<div class="scrim" data-act="closeScrim"><div class="sheet center" role="dialog" aria-modal="true" aria-label="Meta da compra"><div class="sheet-head"><h2>Meta desta compra</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
+    <p class="muted" style="margin:0">Quanto vocês querem gastar nesta ida ao ${esc(f.nome)}. O previsto de mercado no fluxo (${ymLong(o.comp)}) é ${fmt(o.orc)}${o.gasto > 0.004 ? `, com ${fmt(o.gasto)} já gastos` : ''}. A meta vale só para esta compra e não muda o fluxo.</p>
+    <div class="field"><label for="cpm-val">Meta</label><input class="amount" id="cpm-val" inputmode="decimal" value="${String(round2(v)).replace('.', ',')}"></div>
+    <div class="sheet-foot">${c?.meta != null ? '<button type="button" class="btn ghost" data-act="cpMetaLimpar">Usar o previsto do fluxo</button>' : ''}<button type="button" class="btn" data-act="close">Cancelar</button><button type="button" class="btn primary" data-act="cpMetaSalvar">Salvar</button></div></div></div>`;
+  setTimeout(() => $('#cpm-val')?.select(), 30);
+}
+// grava sem redesenhar a tela (modo mercado: não tira o foco do campo seguinte)
+function cpSetQuiet(id, fn) { const c = S.compras.get(id); if (!c) return; fn(c); S._cq = (S._cq || Promise.resolve()).then(() => put('compras', id, structuredClone(c))); cpBarRefresh(); }
 function cpSet(id, fn) { const c = structuredClone(S.compras.get(id)); fn(c); S.compras.set(id, c); render(); S._cq = (S._cq || Promise.resolve()).then(() => put('compras', id, c)); }
 function openValor(id) {
   const c = S.compras.get(id); const f = cpFonte(c?.fonte);
@@ -3328,6 +3410,15 @@ document.addEventListener('click', async e => {
     case 'delPag': del('pagamentos', el.dataset.id); break;
     case 'cpFonte': S.cpFonte = el.dataset.id; render(); break;
     case 'cpNova': await cpNova(); break;
+    case 'cpModo': { const ab = cpAberta(); if (ab) { S.cpBusca = ''; cpSet(ab[0], c => { c.modo = el.dataset.v; }); window.scrollTo(0, 0); } break; }
+    case 'cpOcultarOk': S.cpOcultarOk = !S.cpOcultarOk; render(); break;
+    case 'cpMetaEd': { const ab = cpAberta(); if (!ab) break; const f = cpFonte(ab[1].fonte), M = cpMeta(ab[1], f); openCpMeta(ab[0], M.v); break; }
+    case 'cpMetaSalvar': { const ab = cpAberta(); const v = parseValor($('#cpm-val').value); if (!ab) break; if (isNaN(v) || v <= 0) return toast('Informe a meta.'); closeModal(); cpSet(ab[0], c => { c.meta = round2(v); }); toast('Meta da compra atualizada.'); break; }
+    case 'cpMetaLimpar': { const ab = cpAberta(); if (!ab) break; closeModal(); cpSet(ab[0], c => { delete c.meta; }); toast('A meta volta a ser o previsto no fluxo.'); break; }
+    case 'cpExtra': { const n = $('#cpx-nome').value.trim(); if (!n) return toast('Diga o que pegou.'); const pr = parseValor($('#cpx-preco').value), qt = parseValor($('#cpx-qtd').value || '1'), un = $('#cpx-un').value, id = 'ci-' + uid();
+      const item = {nome: n, categoria: $('#cpx-cat').value, unidade: un, freq: 'eventual', qtdPadrao: 1, ativo: true, codigos: [], regra: ''};
+      S.compraItens.set(id, item); const ab = cpAberta(); if (ab) cpSet(ab[0], c => { c.itens[id] = {vai: true, ok: true, qtd: isNaN(qt) ? 1 : qt, un, ...(isNaN(pr) ? {} : {preco: round2(pr)})}; });
+      await put('compraItens', id, item); toast(`${n} no carrinho.`); break; }
     case 'cpNota': openNota(el.dataset.id || null); break;
     case 'cpLer': cpLer(); break;
     case 'cpLerDeNovo': S.nota.parsed = null; S.nota.texto = ''; drawNota(); break;
@@ -3347,6 +3438,11 @@ document.addEventListener('click', async e => {
 });
 $('#fab').addEventListener('click', () => openLanc(null));
 document.addEventListener('input', e => {
+  if (e.target.dataset?.cppr || (e.target.dataset?.cpq && e.target.closest('.cp-mk'))) { const ab = cpAberta(); if (ab) { const d = e.target.dataset, key = d.cppr || d.cpq, l = (ab[1].itens[key] ||= {}), v = parseValor(e.target.value);
+      if (d.cppr) { if (e.target.value.trim() === '' || isNaN(v)) delete l.preco; else { l.preco = round2(v); l.ok = true; } } else l.qtd = isNaN(v) ? 0 : v;
+      const i = S.compraItens.get(key), tc = document.querySelector(`[data-tot="${CSS.escape(key)}"]`); if (i && tc) tc.textContent = fmt(cpEst(i, l));
+      const ck = document.querySelector(`[data-cpok="${CSS.escape(key)}"]`); if (ck && l.ok) { ck.checked = true; ck.closest('.cp-mk')?.classList.add('ok'); }
+      cpBarRefresh(); } return; }
   if (e.target.dataset?.cpbusca) { S.cpBusca = e.target.value; clearTimeout(S._cpb); S._cpb = setTimeout(() => { render(); const b = $('#cp-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); return; }
   const t = e.target;
   if (t.id === 'cc-real') { const v = parseValor(t.value), d = $('#cc-dif'); if (d) d.textContent = isNaN(v) || S.concCalc == null ? '' : Math.abs(v - S.concCalc) < 0.01 ? 'Confere com o app.' : `Diferença: ${fmtS(v - S.concCalc)}`; return; }
@@ -3414,7 +3510,17 @@ document.addEventListener('change', async e => {
   if (d.ctd) { const v = Number(t.value); const dias = {...(S.ctrl.transporte?.dias || {}), [d.ctd]: v}; saveCtrl('transporte', {dias}); return; }
   if (d.ck) { const v = parseValor(t.value); if (!isNaN(v)) saveCtrl('marmitas', {[d.ck]: v}); return; }
   if (d.ckq) { const qtd = {...(S.ctrl.marmitas?.qtd || {}), [d.ckq]: Number(t.value) || 0}; saveCtrl('marmitas', {qtd}); return; }
-  if (d.cpvai || d.cpq) { const ab = cpAberta(); if (!ab) return; const key = d.cpvai || d.cpq; cpSet(ab[0], c => { const it = (c.itens[key] ||= {qtd: S.compraItens.get(key)?.qtdPadrao ?? 1}); if (d.cpvai) it.vai = t.checked; else it.qtd = Number(t.value) || 0; }); return; }
+  if (d.cpvai || d.cpq || d.cppr || d.cpun || d.cpok) { const ab = cpAberta(); if (!ab) return; const key = d.cpvai || d.cpq || d.cppr || d.cpun || d.cpok;
+    const quiet = !!t.closest('.cp-mk');
+    (quiet ? cpSetQuiet : cpSet)(ab[0], c => { const it = (c.itens[key] ||= {qtd: S.compraItens.get(key)?.qtdPadrao ?? 1});
+      if (d.cpvai) it.vai = t.checked;
+      else if (d.cpq) { const v = parseValor(String(t.value)); it.qtd = isNaN(v) ? 0 : v; }
+      else if (d.cppr) { const v = parseValor(t.value); if (t.value.trim() === '' || isNaN(v)) delete it.preco; else { it.preco = round2(v); it.ok = true; } }
+      else if (d.cpun) it.un = t.value;
+      else if (d.cpok) it.ok = t.checked; });
+    if (quiet) { const row = t.closest('.cp-mk'), l = cpAberta()?.[1].itens[key], i = S.compraItens.get(key); row?.classList.toggle('ok', !!l?.ok); const ck = row?.querySelector('[data-cpok]'); if (ck) ck.checked = !!l?.ok; const tc = row?.querySelector('[data-tot]'); if (tc && i) tc.textContent = fmt(cpEst(i, l)); }
+    if (d.cpun) { const ci = S.compraItens.get(key); if (ci && ci.unidade !== t.value) put('compraItens', key, {...ci, unidade: t.value}); }
+    return; }
   if (d.cpfonte) { cpSet(d.cpfonte, c => { c.fonte = t.value; }); S.cpFonte = t.value; return; }
   if (d.cpedit) { const it = S.compraItens.get(d.cpedit); if (!it) return; const v = d.k === 'qtdPadrao' ? (Number(String(t.value).replace(',', '.')) || 0) : t.value; put('compraItens', d.cpedit, {...it, [d.k]: v}); return; }
   if (d.nt && S.nota) { S.nota[d.nt] = t.value; if (d.nt === 'texto') return; return; }
