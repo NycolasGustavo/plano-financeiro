@@ -1521,8 +1521,8 @@ function vInicio() {
       <div class="in-proj">Previsão para o fim de ${mesN}: <b class="${fimCor}">${fmt(P.fim)}</b></div>
       ${Math.abs(P.fim - P.hoje) > 0.004 ? `<div class="in-proj" style="font-size:13px;margin-top:2px">${P.fim < P.hoje ? `Até lá, sai ${fmt(P.hoje - P.fim)} a mais do que entra.` : `Até lá, entra ${fmt(P.fim - P.hoje)} a mais do que sai.`}</div>` : ''}
       <div class="in-kpis">
-        <div class="in-kpi"><span>Falta entrar</span><b class="pos">${fmt(P.eP + Math.max(0, P.tP))}</b></div>
-        <div class="in-kpi"><span>Falta pagar</span><b>${fmt(P.sP + Math.max(0, -P.tP))}</b></div>
+        ${(() => { const D = tit === 'casal' ? null : destinoMes(ym, tit); return `<div class="in-kpi"><span>Falta entrar</span><b class="pos">${fmt(D ? D.entra : P.eP + Math.max(0, P.tP))}</b></div>
+        <div class="in-kpi"><span>Falta pagar</span><b>${fmt(D ? D.contas + D.env : P.sP + Math.max(0, -P.tP))}</b></div>`; })()}
         <div class="in-kpi"><span>Investido</span><b>${fmt(cxHoje)}</b></div>
       </div>
       ${tit === 'casal' ? `<div class="in-split">${ids.map(t => { const Pt = ponte(ym, t); return Pt ? `<span>${esc(titNome(t))}: <b>${fmt(Pt.hoje)}</b> → ${fmt(Pt.fim)}</span>` : ''; }).join('')}</div>` : ''}
