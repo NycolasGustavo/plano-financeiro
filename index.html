@@ -1301,10 +1301,10 @@ function vInicio() {
   const cardTile = c => cardBrandWrap(c, cardTile0(c));
   const cardTile0 = c => {
     const L = limiteCartao(c);
-    if (L.beneficio) { const pct = L.limite ? Math.max(0, L.livre) / L.limite * 100 : 0;
+    if (L.beneficio) { const pct = L.disp ? Math.max(0, L.livre) / L.disp * 100 : 0;
       return `<button class="in-card vou" data-act="nav" data-v="cartoes"><span class="top"><b>${esc(c.nome)}</b><span class="chip">voucher</span></span>
         <span class="eyebrow">Saldo disponível</span><span class="v">${fmt(L.livre)}</span>
-        <div class="lim-meter"><b style="width:${pct}%;background:var(--pos)"></b></div><small>${fmt(L.usado)} usados de ${fmt(L.limite)} em ${mesN}${L.livreProj < L.livre - 0.004 ? ` · previsto sobrar ${fmt(L.livreProj)}` : ''}</small></button>`; }
+        <div class="lim-meter"><b style="width:${pct}%;background:var(--pos)"></b></div><small>${fmt(L.usado)} usados de ${fmt(L.disp)} em ${mesN}${L.sobra ? ` (recarga ${fmt(L.limite)} + ${fmt(L.sobra)} que sobrou)` : ''}${L.livreProj < L.livre - 0.004 ? ` · previsto sobrar ${fmt(L.livreProj)}` : ''}</small></button>`; }
     const semItens = L.usado < 0.004 && L.ab.real < 0.004 && L.proj < 0.004 && L.fechada.falta < 0.004;
     if (semItens && c.tipo === 'crediario') { // cobranças lançadas como pagamentos na conta (ex.: Shopee)
       const chave = norm(c.fornecedor || c.nome.split(/[ (]/)[0]), cob = [];
@@ -1610,7 +1610,7 @@ function limitePanel(card) {
   const L = limiteCartao(card);
   if (L.beneficio) return `<h3 style="margin:18px 0 8px">Saldo do benefício em ${ymLong(HOJE_YM)}</h3>
     ${L.limite ? `<div class="gbar" style="grid-template-columns:minmax(0,1fr) auto">${meterLimite(L, true)}<span class="num ${L.livre < 0 ? 'neg' : ''}">${fmt(L.livre)} disponível</span></div>
-    <p class="muted" style="font-size:12.5px;margin:4px 0 0">Recarga de ${fmt(L.limite)} por mês. Gasto ${fmt(L.usado)}${L.proj > L.usado + 0.004 ? `, previsto até o fim do mês ${fmt(L.proj)}` : ''}. Benefício não passa pela conta: não entra no saldo do banco.</p>` : '<p class="muted" style="font-size:12.5px">Cadastre o valor da recarga mensal em Ajustes (campo Limite).</p>'}`;
+    <p class="muted" style="font-size:12.5px;margin:4px 0 0">Recarga de ${fmt(L.limite)} no dia ${card.vencimento || 1}${card.acumula ? ` + ${fmt(L.sobra)} que sobrou dos meses anteriores (o saldo acumula)` : ''}. Gasto ${fmt(L.usado)}${L.proj > L.usado + 0.004 ? `, previsto até o fim do mês ${fmt(L.proj)}` : ''}. Benefício não passa pela conta: não entra no saldo do banco.</p>` : '<p class="muted" style="font-size:12.5px">Cadastre o valor da recarga mensal em Ajustes (campo Limite).</p>'}`;
   const pags = [...S.pagamentos].filter(([, p]) => p.cartao === card.id && p.data && fatDoPagamento(card, p) >= L.fechada.F).sort((a, b) => b[1].data.localeCompare(a[1].data));
   const dt = iso => iso.split('-').reverse().slice(0, 2).join('/');
   const linha = (lbl, sub, v, cls = '') => `<div class="row"><div class="t"><b>${lbl}</b><small>${sub}</small></div><span class="num ${cls}">${v}</span></div>`;
@@ -1663,7 +1663,7 @@ function vCartoes() {
     if (c.tipo === 'beneficio') info = `<small class="num">Gasto em ${ymShort(HOJE_YM)}: ${fmt(totFat(c.id, HOJE_YM, 'realizado'))}</small>`;
     else { const fe = ymAdd(ab, -1), fc = E.faturaCaixa, tF = fc.totFat[c.id + '|' + fe] || 0, falta = fc.restante(c.id, fe);
       info = `<small class="num">Aberta (${ymShort(ab)}): ${fmt(totFat(c.id, ab))}</small><small class="num">${c.descontoSalario ? (HOJE >= vencData(c, fe) ? `Fechada (${ymShort(fe)}): descontada no salário` : `Fechada (${ymShort(fe)}): ${fmt(tF)} sai do salário em ${dt(vencData(c, fe))}`) : tF < 0.005 ? `Fechada (${ymShort(fe)}): sem compras` : falta < 0.005 ? `Fechada (${ymShort(fe)}): paga` : `<span class="neg">Fechada (${ymShort(fe)}): falta ${fmt(falta)} · vence ${dt(vencData(c, fe))}</span>`}</small>`; }
-    return cardBrandWrap(c, `<button class="cardpick" data-act="card" data-id="${c.id}" aria-pressed="${c.id === card.id}"><b>${esc(c.nome)}${S.tit === 'casal' ? ` <small>· ${esc(titNome(c.titular))}</small>` : ''}</b>${c.tipo && c.tipo !== 'credito' ? `<small>${esc(TIPO_CARTAO[c.tipo] || c.tipo)}</small>` : ''}${c.ativo ? info : '<small>Inativo</small>'}${L ? `<small class="num ${L.livre < 0 ? 'neg' : ''}">${c.tipo === 'beneficio' ? 'Disponível' : 'Livre'}: ${fmt(L.livre)} de ${fmt(L.limite)}</small>${meterLimite(L)}` : ''}${c.datasPendentes ? '<small class="warn">datas de fechamento a confirmar</small>' : ''}</button>`, 'cardpick');
+    return cardBrandWrap(c, `<button class="cardpick" data-act="card" data-id="${c.id}" aria-pressed="${c.id === card.id}"><b>${esc(c.nome)}${S.tit === 'casal' ? ` <small>· ${esc(titNome(c.titular))}</small>` : ''}</b>${c.tipo && c.tipo !== 'credito' ? `<small>${esc(TIPO_CARTAO[c.tipo] || c.tipo)}</small>` : ''}${c.ativo ? info : '<small>Inativo</small>'}${L ? `<small class="num ${L.livre < 0 ? 'neg' : ''}">${c.tipo === 'beneficio' ? 'Disponível' : 'Livre'}: ${fmt(L.livre)} de ${fmt(L.beneficio ? L.disp : L.limite)}</small>${meterLimite(L)}` : ''}${c.datasPendentes ? '<small class="warn">datas de fechamento a confirmar</small>' : ''}</button>`, 'cardpick');
   };
   const inat = sorted.filter(c => !c.ativo && c.id !== card.id);
   return `<div class="cards">${sorted.filter(c => c.ativo || c.id === card.id || S.cartaoInat).map(tile).join('')}${inat.length ? `<button class="btn ghost sm" data-act="cardInat" style="align-self:center">${S.cartaoInat ? 'Ocultar inativos' : `+ ${inat.length} inativo${inat.length > 1 ? 's' : ''}`}</button>` : ''}</div>
@@ -2022,9 +2022,12 @@ function fatDoPagamento(card, p) { if (p.fatura) return p.fatura; const [y, mo, 
 function limiteCartao(card) {
   const E = engine(), fc = E.faturaCaixa, limite = Number(card.limite) || 0;
   const somaF = (F, st) => { let v = 0; for (const it of E.byMonth.get(F) || []) if (it.meio === card.id && it.status !== 'pulado' && (st ? it.status === st : true)) v += it.tipo === 'saida' ? it.valor : -it.valor; return round2(v); };
-  if (card.tipo === 'beneficio') {
+  if (card.tipo === 'beneficio') { // voucher: recarga mensal; com card.acumula, o que sobra passa para o mês seguinte (a partir de card.saldoDesde, com card.saldoInicial antes da recarga)
     const usado = somaF(HOJE_YM, 'realizado'), prev = somaF(HOJE_YM, 'previsto');
-    return {beneficio: true, aberta: HOJE_YM, usado, limite, livre: round2(limite - usado), pct: limite ? usado / limite * 100 : 0, proj: round2(usado + prev), livreProj: round2(limite - usado - prev), pctProj: limite ? (usado + prev) / limite * 100 : 0, fechada: null, futuras: 0, desde: HOJE_YM + '-01'};
+    let sobra = 0;
+    if (card.acumula) { const d0 = card.saldoDesde || HOJE_YM; sobra = Number(card.saldoInicial) || 0; for (let m = d0; m < HOJE_YM; m = ymAdd(m, 1)) sobra = round2(sobra + limite - somaF(m)); }
+    const disp = round2(sobra + limite);
+    return {beneficio: true, aberta: HOJE_YM, usado, limite, sobra, disp, livre: round2(disp - usado), pct: disp ? usado / disp * 100 : 0, proj: round2(usado + prev), livreProj: round2(disp - usado - prev), pctProj: disp ? (usado + prev) / disp * 100 : 0, fechada: null, futuras: 0, desde: HOJE_YM + '-01'};
   }
   const aberta = competenciaCartao(card, HOJE), fechadaF = ymAdd(aberta, -1);
   const pg = F => round2(fc.paidFor[card.id + '|' + F] || 0);
