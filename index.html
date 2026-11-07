@@ -822,7 +822,7 @@ function engine() {
   if (pj && pf && pjIni) for (let m = pjIni; m <= end; m = ymAdd(m, 1)) {
     const arr = byMonth.get(m) || [];
     if (arr.some(it => it.titular === pj && it.categoria === 'distrib-pj' && !it.virtual)) continue;
-    let sobra = 0; for (const it of arr) if (it.titular === pj && it.status !== 'pulado' && !isFora(it.categoria)) sobra += (it.tipo === 'entrada' ? 1 : -1) * (Number(it.valor) || 0);
+    let sobra = 0; for (const it of arr) if (it.titular === pj && it.status !== 'pulado' && it.meio !== 'caixinha' && (!isFora(it.categoria) || ['caixinha-aporte', 'caixinha-resgate'].includes(it.categoria))) sobra += (it.tipo === 'entrada' ? 1 : -1) * (Number(it.valor) || 0);
     sobra = round2(sobra); if (sobra <= 0.004) continue;
     const base = {virtual: true, distrib: true, competencia: m, data: `${m}-${pad(Math.min(Number(C().pjDistribDia) || 10, 28))}`, valor: sobra, meio: 'conta', status: 'previsto'};
     push(m, {...base, id: 'vd:pj:' + m, tipo: 'saida', titular: pj, categoria: 'distrib-pj', descricao: `Distribuição de lucros para ${titNome(pf)}`, fornecedor: titNome(pf), natureza: 'transferencia'});
@@ -865,6 +865,24 @@ function engine() {
       else if (m >= caixaDesde()) { delta += -(cis[t]?.[m] || 0) - (paidIn[t + '|' + m] || 0); } // mês fechado: cartão continua em regime de caixa (o que foi pago no mês)
       if (m === HOJE_YM) hoje[t] = round2(ini + (realConta[t] || 0) - (paidIn[t + '|' + m] || 0));
       acc = round2(acc + delta); saldo[t][m] = {ini, fim: acc}; m = ymAdd(m, 1);
+    }
+  }
+  // caixa mínimo (config.caixaMinimo = {titular: {valor, cx}}): do próximo mês em diante a conta fecha sempre no caixa mínimo;
+  // o que passa vai para a reserva indicada e o que falta sai dela (previsto, até virar transferência real)
+  const cmCfg = C().caixaMinimo || {};
+  for (const [t, cm] of Object.entries(cmCfg)) {
+    const min = Number(cm?.valor) || 0, cx = cm?.cx; if (!saldo[t] || !cx || !S.cxs.get(cx) || S.cxs.get(cx).ativa === false) continue;
+    let shift = 0;
+    for (let m = ymAdd(HOJE_YM, 1); m <= end; m = ymAdd(m, 1)) {
+      const sd = saldo[t][m]; if (!sd) continue;
+      const ini = round2(sd.ini - shift), fim0 = round2(sd.fim - shift), aj = round2(fim0 - min);
+      if (Math.abs(aj) > 0.004) {
+        const base = {virtual: true, cxAuto: true, competencia: m, data: `${m}-28`, meio: 'conta', status: 'previsto', titular: t, caixinha: cx, natureza: 'transferencia', fornecedor: S.cxs.get(cx).nome, valor: Math.abs(aj)};
+        push(m, aj > 0 ? {...base, id: 'vcm:' + t + ':' + m, tipo: 'saida', categoria: 'caixinha-aporte', descricao: `Acima do caixa mínimo → ${S.cxs.get(cx).nome}`}
+                       : {...base, id: 'vcm:' + t + ':' + m, tipo: 'entrada', categoria: 'caixinha-resgate', descricao: `Cobrir o caixa mínimo ← ${S.cxs.get(cx).nome}`});
+        const f = ((flow[t] ||= {})[m] ||= {e:0, s:0, eR:0, sR:0, t:0, a:0}); f.t = round2(f.t - aj);
+      }
+      shift = round2(shift + aj); saldo[t][m] = {ini, fim: min};
     }
   }
   hoje.casal = round2(pessoas().reduce((s, p) => s + (hoje[p.id] || 0), 0));
@@ -1600,7 +1618,11 @@ function destinoHTML(ym, tit) {
       ${D.apo > 0.004 ? ln('Guardar nos investimentos', D.apo, '− ', 'aportes previstos do mês') : ''}
       ${(() => { const T = tetoImp(ym, tit); if (!T && D.env < 0.005) return ''; const g = gastoImp(ym, tit); return ln('Teto de besteiras disponível', D.env, D.env > 0.004 ? '− ' : '', T ? (g > T + 0.004 ? `usou ${fmt(g)} de ${fmt(T)}: estourou em ${fmt(g - T)}` : `usou ${fmt(g)} de ${fmt(T)} · o que não gastar vira sobra`) : 'o que não gastar vira sobra'); })()}
       ${Math.abs(D.outros) > 0.004 ? ln('Rendimentos e ajustes', D.outros, D.outros < 0 ? '− ' : '+ ') : ''}
-      ${ln(`Sobra livre no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', D.sobra > 0.004 ? `no fechamento, vai para "${SOBRA_NOME}"${cx ? '' : ' (a caixinha é criada na primeira vez)'}` : D.sobra < -0.004 ? 'o mês fecha no vermelho: revise o teto ou os aportes' : 'tudo já tem destino', 'tot ' + (D.sobra < -0.004 ? 'neg' : ''))}
+      ${(() => { const cm = (C().caixaMinimo || {})[tit], min = Number(cm?.valor) || 0, rs = cm?.cx ? S.cxs.get(cm.cx)?.nome : null;
+        if (!min) return ln(`Sobra livre no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', D.sobra > 0.004 ? `no fechamento, vai para "${SOBRA_NOME}"${cx ? '' : ' (a caixinha é criada na primeira vez)'}` : D.sobra < -0.004 ? 'o mês fecha no vermelho: revise o teto ou os aportes' : 'tudo já tem destino', 'tot ' + (D.sobra < -0.004 ? 'neg' : ''));
+        const ex = round2(D.sobra - min);
+        return ln(`Saldo no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', `caixa mínimo ${fmt(min)}`, 'tot ' + (ex < -0.004 ? 'neg' : '')) +
+          (Math.abs(ex) > 0.004 ? ln(ex > 0 ? `Vai para ${esc(rs || 'a reserva')} no fechamento` : `Falta para o caixa mínimo`, ex, ex > 0 ? '' : '− ', ex > 0 ? 'o que passar do caixa mínimo' : `sai de ${esc(rs || 'a reserva')} se não ajustar os gastos`, ex > 0 ? 'pos' : 'neg') : ''); })()}
     </div></section>`;
 }
 // fechamento: o que sobrou na conta no fim do mês anterior, descontado o que sai antes do salário, vai para a Sobra a destinar
@@ -1615,14 +1637,15 @@ function sobraFechamento(tit) {
   const dataSal = sal ? sal.data : HOJE;
   const fc = engine().faturaCaixa;
   const antes = round2(its.filter(it => it.tipo === 'saida' && it.data && it.data < dataSal && it.meio !== 'caixinha' && !(fc.cardIds.has(it.meio) && ym >= caixaDesde())).reduce((a, it) => a + (Number(it.valor) || 0), 0));
-  const valor = round2(P.ini - antes);
+  const cm = (C().caixaMinimo || {})[tit], minimo = Number(cm?.valor) || 0;
+  const valor = round2(P.ini - antes - minimo);
   if (valor < 10) return null;
-  return {ym, prev, ini: P.ini, antes, valor, data: dataSal < HOJE ? HOJE : dataSal, cx};
+  return {ym, prev, ini: P.ini, antes, valor, minimo, data: dataSal < HOJE ? HOJE : dataSal, cx: cm?.cx && S.cxs.get(cm.cx) ? cm.cx : cx};
 }
 function sobraCardHTML(tit) {
   const F = sobraFechamento(tit); if (!F) return '';
   return `<div class="in-alert sobra"><b>${MESES[Number(F.prev.slice(5)) - 1][0].toUpperCase() + MESES[Number(F.prev.slice(5)) - 1].slice(1)} fechou com ${fmt(F.ini)} na conta</b>
-    <span class="muted" style="font-size:13px">${F.antes > 0.004 ? `Descontando ${fmt(F.antes)} que sai antes do salário, ` : ''}${fmt(F.valor)} podem ir para "${SOBRA_NOME}" em ${dm(F.data)}. Fica como previsto até você transferir no banco.</span>
+    <span class="muted" style="font-size:13px">${F.antes > 0.004 ? `Descontando ${fmt(F.antes)} que sai antes do salário${F.minimo ? ` e o caixa mínimo de ${fmt(F.minimo)}` : ''}, ` : F.minimo ? `Mantendo o caixa mínimo de ${fmt(F.minimo)}, ` : ''}${fmt(F.valor)} podem ir para "${esc(S.cxs.get(F.cx)?.nome || SOBRA_NOME)}" em ${dm(F.data)}. Fica como previsto até você transferir no banco.</span>
     <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"><button class="btn primary sm" data-act="sobraGuardar">Programar ${fmt(F.valor)}</button><button class="btn ghost sm" data-act="sobraDispensar">Deixar na conta</button></span></div>`;
 }
 async function sobraGuardar() {
@@ -1630,7 +1653,7 @@ async function sobraGuardar() {
   let cx = F.cx;
   if (!cx) { cx = 'cx-sobra-' + tit; const ok = await put('caixinhas', cx, {nome: SOBRA_NOME, titular: tit, tipo: 'investimento', meta: null, metaData: null, saldoInicial: 0, saldoInicialData: HOJE, rendimentoAa: null, restrita: false, obs: 'Recebe o que sobra na conta no fechamento de cada mês. Depois você decide o destino.', ativa: true, criadoEm: HOJE}); if (!ok) return; S.cxs.set(cx, {nome: SOBRA_NOME, titular: tit, tipo: 'investimento', ativa: true, saldoInicial: 0, saldoInicialData: HOJE}); }
   openLanc(null);
-  Object.assign(S.form, {modo: 'transf', tipo: 'saida', titular: tit, para: 'cx:' + cx, valor: String(F.valor).replace('.', ','), descricao: `Sobra de ${MESES[Number(F.prev.slice(5)) - 1]}`, data: F.data, status: 'previsto', categoria: '', natureza: 'transferencia'});
+  Object.assign(S.form, {modo: 'transf', tipo: 'saida', titular: tit, para: 'cx:' + cx, valor: String(F.valor).replace('.', ','), descricao: `Sobra de ${MESES[Number(F.prev.slice(5)) - 1]} acima do caixa mínimo`, data: F.data, status: 'previsto', categoria: '', natureza: 'transferencia'});
   drawForm(true);
 }
 function vInicio() {
