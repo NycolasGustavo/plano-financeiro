@@ -507,6 +507,15 @@ details.help p{margin:0 0 6px}
   .in{max-width:1240px}
   .in-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
 }
+.dst-l{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 14px;border-top:1px solid var(--line)}
+.dst-l:first-child{border-top:0}
+.dst-l span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.dst-l small{font-size:12px;color:var(--muted)}
+.dst-l.pos b{color:var(--pos)}
+.dst-l.tot{background:var(--sunken);border-top:2px solid var(--line)}
+.dst-l.tot span,.dst-l.tot b{font-weight:600}
+.dst-l.tot.neg b{color:var(--neg)}
+.in-alert.sobra{display:flex;flex-direction:column;gap:4px;background:var(--pos-soft)}
 /* descrições em até duas linhas no Início */
 .in-tx b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 /* tabelas que viram cartões no celular */
@@ -1362,6 +1371,70 @@ function renderTabbar() {
 const ORC_CATS = new Set(['mercado', 'mercado-np', 'lanches', 'marmitas']);
 const dm = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
 function isoAdd(iso, d) { const t = new Date(iso + 'T12:00:00'); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); }
+/* ============ destino do dinheiro: investimentos, teto de besteiras e sobra ============ */
+const SOBRA_NOME = 'Sobra a destinar';
+const cxSobra = t => [...S.cxs].find(([, c]) => c.titular === t && c.ativa !== false && norm(c.nome) === norm(SOBRA_NOME))?.[0] || null;
+// decompõe o saldo projetado do fim do mês: contas, investimentos previstos, teto de besteiras e sobra livre
+function destinoMes(ym, tit) {
+  const P = ponte(ym, tit); if (!P) return null;
+  const fc = engine().faturaCaixa; let env = 0, apo = 0;
+  for (const it of itensMes(ym, tit)) {
+    if (it.status !== 'previsto' || (fc.cardIds.has(it.meio) && ym >= caixaDesde()) || it.meio === 'caixinha') continue;
+    const v = Number(it.valor) || 0;
+    if (it.envelope && it.categoria === 'impulsos' && it.tipo === 'saida') env += v;
+    else if (it.categoria === 'caixinha-aporte' && it.tipo === 'saida') apo += v;
+    else if (it.categoria === 'caixinha-resgate' && it.tipo === 'entrada') apo -= v;
+  }
+  env = round2(env); apo = round2(apo);
+  const contas = round2(P.sP - env), outrasT = round2(P.tP + apo);
+  return {P, ini: P.cur ? P.hoje : P.ini, entra: round2(P.eP + Math.max(0, outrasT)), contas: round2(contas + Math.max(0, -outrasT)), apo, env, outros: P.outros, sobra: P.fim};
+}
+function destinoHTML(ym, tit) {
+  if (tit === 'casal' || tit === pjId()) return '';
+  const D = destinoMes(ym, tit); if (!D) return '';
+  const mesN = MESES[Number(ym.slice(5)) - 1], cx = cxSobra(tit);
+  const ln = (rot, v, sinal, sub, cls = '') => `<div class="dst-l ${cls}"><span>${rot}${sub ? `<small>${sub}</small>` : ''}</span><b class="num">${sinal}${fmt(Math.abs(v))}</b></div>`;
+  return `<section class="in-sec"><div class="in-sec-h"><h2>Para onde vai o dinheiro</h2></div>
+    <div class="in-list dst">
+      ${ln(D.P.cur ? 'Na conta hoje' : `Saldo no início de ${mesN}`, D.ini, D.ini < 0 ? '−' : '')}
+      ${D.entra > 0.004 ? ln('Ainda vai entrar', D.entra, '+ ', '', 'pos') : ''}
+      ${D.contas > 0.004 ? ln('Contas e faturas a pagar', D.contas, '− ') : ''}
+      ${D.apo > 0.004 ? ln('Guardar nos investimentos', D.apo, '− ', 'aportes previstos do mês') : ''}
+      ${(() => { const T = tetoImp(ym, tit); if (!T && D.env < 0.005) return ''; const g = gastoImp(ym, tit); return ln('Teto de besteiras disponível', D.env, D.env > 0.004 ? '− ' : '', T ? (g > T + 0.004 ? `usou ${fmt(g)} de ${fmt(T)}: estourou em ${fmt(g - T)}` : `usou ${fmt(g)} de ${fmt(T)} · o que não gastar vira sobra`) : 'o que não gastar vira sobra'); })()}
+      ${Math.abs(D.outros) > 0.004 ? ln('Rendimentos e ajustes', D.outros, D.outros < 0 ? '− ' : '+ ') : ''}
+      ${ln(`Sobra livre no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', D.sobra > 0.004 ? `no fechamento, vai para "${SOBRA_NOME}"${cx ? '' : ' (a caixinha é criada na primeira vez)'}` : D.sobra < -0.004 ? 'o mês fecha no vermelho: revise o teto ou os aportes' : 'tudo já tem destino', 'tot ' + (D.sobra < -0.004 ? 'neg' : ''))}
+    </div></section>`;
+}
+// fechamento: o que sobrou na conta no fim do mês anterior, descontado o que sai antes do salário, vai para a Sobra a destinar
+function sobraFechamento(tit) {
+  if (tit === 'casal' || tit === pjId() || !S.db || S.readOnly) return null;
+  const ym = HOJE_YM, prev = ymAdd(ym, -1), P = ponte(ym, tit); if (!P) return null;
+  if ((C().sobraDispensada || {})[tit + '|' + ym]) return null;
+  const cx = cxSobra(tit);
+  if (cx && itensMes(ym, tit).some(it => it.caixinha === cx && it.categoria === 'caixinha-aporte' && it.status !== 'pulado' && norm(it.descricao).startsWith('sobra de'))) return null;
+  const its = itensMes(ym, tit).filter(it => it.status !== 'pulado');
+  const sal = its.filter(it => it.tipo === 'entrada' && catById(it.categoria)?.grupo === 'renda' && it.data).sort((a, b) => a.data.localeCompare(b.data))[0];
+  const dataSal = sal ? sal.data : HOJE;
+  const fc = engine().faturaCaixa;
+  const antes = round2(its.filter(it => it.tipo === 'saida' && it.data && it.data < dataSal && it.meio !== 'caixinha' && !(fc.cardIds.has(it.meio) && ym >= caixaDesde())).reduce((a, it) => a + (Number(it.valor) || 0), 0));
+  const valor = round2(P.ini - antes);
+  if (valor < 10) return null;
+  return {ym, prev, ini: P.ini, antes, valor, data: dataSal < HOJE ? HOJE : dataSal, cx};
+}
+function sobraCardHTML(tit) {
+  const F = sobraFechamento(tit); if (!F) return '';
+  return `<div class="in-alert sobra"><b>${MESES[Number(F.prev.slice(5)) - 1][0].toUpperCase() + MESES[Number(F.prev.slice(5)) - 1].slice(1)} fechou com ${fmt(F.ini)} na conta</b>
+    <span class="muted" style="font-size:13px">${F.antes > 0.004 ? `Descontando ${fmt(F.antes)} que sai antes do salário, ` : ''}${fmt(F.valor)} podem ir para "${SOBRA_NOME}" em ${dm(F.data)}. Fica como previsto até você transferir no banco.</span>
+    <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"><button class="btn primary sm" data-act="sobraGuardar">Programar ${fmt(F.valor)}</button><button class="btn ghost sm" data-act="sobraDispensar">Deixar na conta</button></span></div>`;
+}
+async function sobraGuardar() {
+  const tit = S.tit, F = sobraFechamento(tit); if (!F) return;
+  let cx = F.cx;
+  if (!cx) { cx = 'cx-sobra-' + tit; const ok = await put('caixinhas', cx, {nome: SOBRA_NOME, titular: tit, tipo: 'investimento', meta: null, metaData: null, saldoInicial: 0, saldoInicialData: HOJE, rendimentoAa: null, restrita: false, obs: 'Recebe o que sobra na conta no fechamento de cada mês. Depois você decide o destino.', ativa: true, criadoEm: HOJE}); if (!ok) return; S.cxs.set(cx, {nome: SOBRA_NOME, titular: tit, tipo: 'investimento', ativa: true, saldoInicial: 0, saldoInicialData: HOJE}); }
+  openLanc(null);
+  Object.assign(S.form, {modo: 'transf', tipo: 'saida', titular: tit, para: 'cx:' + cx, valor: String(F.valor).replace('.', ','), descricao: `Sobra de ${MESES[Number(F.prev.slice(5)) - 1]}`, data: F.data, status: 'previsto', categoria: '', natureza: 'transferencia'});
+  drawForm(true);
+}
 function vInicio() {
   if (!S.config && S.lanc.size === 0) return emptyStart();
   const tit = S.tit, ids = idsDe(tit), E = engine(), fc = E.faturaCaixa, ym = HOJE_YM, mesN = MESES[Number(ym.slice(5)) - 1];
@@ -1448,8 +1521,8 @@ function vInicio() {
       <div class="in-proj">Previsão para o fim de ${mesN}: <b class="${fimCor}">${fmt(P.fim)}</b></div>
       ${Math.abs(P.fim - P.hoje) > 0.004 ? `<div class="in-proj" style="font-size:13px;margin-top:2px">${P.fim < P.hoje ? `Até lá, sai ${fmt(P.hoje - P.fim)} a mais do que entra.` : `Até lá, entra ${fmt(P.fim - P.hoje)} a mais do que sai.`}</div>` : ''}
       <div class="in-kpis">
-        <div class="in-kpi"><span>Falta entrar</span><b class="pos">${fmt(P.eP + Math.max(0, P.tP))}</b></div>
-        <div class="in-kpi"><span>Falta pagar</span><b>${fmt(P.sP + Math.max(0, -P.tP))}</b></div>
+        ${(() => { const D = tit === 'casal' ? null : destinoMes(ym, tit); return `<div class="in-kpi"><span>Falta entrar</span><b class="pos">${fmt(D ? D.entra : P.eP + Math.max(0, P.tP))}</b></div>
+        <div class="in-kpi"><span>Falta pagar</span><b>${fmt(D ? D.contas + D.env : P.sP + Math.max(0, -P.tP))}</b></div>`; })()}
         <div class="in-kpi"><span>Investido</span><b>${fmt(cxHoje)}</b></div>
       </div>
       ${tit === 'casal' ? `<div class="in-split">${ids.map(t => { const Pt = ponte(ym, t); return Pt ? `<span>${esc(titNome(t))}: <b>${fmt(Pt.hoje)}</b> → ${fmt(Pt.fim)}</span>` : ''; }).join('')}</div>` : ''}
@@ -1457,8 +1530,10 @@ function vInicio() {
         return `<div class="in-split" style="margin-top:12px"><span>${tit === 'casal' ? `Banco (${tsB.map(titNome).map(esc).join(', ')})` : 'No banco'}${at ? ` (${new Date(at).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})})` : ''}: <b>${fmt(b)}</b> ${Math.abs(dif) < 0.011 ? '<span class="pos">· confere</span>' : `<span class="warn">· diferença ${fmtS(dif)}</span>`}</span></div>`; })()}
       ${P.cur && tit !== 'casal' ? `<div style="margin-top:12px"><button class="btn sm" data-act="conciliar">Conferir com o banco</button></div>` : ''}
     </section>
+    ${sobraCardHTML(tit)}
     ${(() => { const n = impLista().filter(x => x.sg.acao !== 'semConta' && ids.includes(x.imp.titular)).length; return n ? `<button class="in-alert" data-act="nav" data-v="banco" style="text-align:left;border:0;cursor:pointer;font:inherit;color:var(--ink)"><b>${n} ${n > 1 ? 'transações' : 'transação'} do banco para conferir</b><br><span class="muted" style="font-size:12.5px">Vieram pelo Open Finance. Toque para confirmar ou lançar.</span></button>` : ''; })()}
     ${negM ? `<div class="in-alert neg">O saldo projetado fica negativo em ${ymLong(negM.m)} (${fmt(negM.fim)}). Vale rever antes de gastar.</div>` : ''}
+    ${destinoHTML(ym, tit)}
     <section class="in-sec"><div class="in-sec-h"><h2>Próximos 15 dias</h2><button class="btn ghost sm" data-act="inicioMes" data-m="${ym}">Ver o mês</button></div>
       <div class="in-list">${proximos.length ? proximos.slice(0, 12).map(linhaAcao).join('') + (proximos.length > 12 ? `<div class="in-empty"><button class="btn ghost sm" data-act="nav" data-v="lanc">Ver mais ${proximos.length - 12}</button></div>` : '') : '<div class="in-empty">Nada a pagar ou receber nos próximos 15 dias.</div>'}</div></section>
     ${abertos.length ? `<section class="in-sec"><details class="in-ab" ${S.inAbOpen ? 'open' : ''}><summary><span><b>Ainda em aberto em ${mesN}</b><small>${abertos.length} ${abertos.length > 1 ? 'itens com data já passada, sem confirmação' : 'item com data já passada, sem confirmação'} · ${fmtS(totAb)}</small></span><span class="chev" aria-hidden="true"></span></summary>
@@ -2999,6 +3074,8 @@ document.addEventListener('click', async e => {
     case 'skip': { const it = findItem(el.dataset.id); if (!it) break; const {id, virtual, ...rest} = it; put('lancamentos', 'rx-' + uid(), {...rest, valor: 0, status: 'pulado', origem: 'recorrencia'}).then(ok => ok && toast('Mês pulado para esta recorrência.')); break; }
     case 'unskip': del('lancamentos', el.dataset.id); break;
     case 'filtros': S.filtOpen = !S.filtOpen; render(); break;
+    case 'sobraGuardar': sobraGuardar(); break;
+    case 'sobraDispensar': saveConfig({sobraDispensada: {...(C().sobraDispensada || {}), [S.tit + '|' + HOJE_YM]: true}}); toast('Sobra mantida na conta neste mês.'); break;
     case 'limpaFiltro': S.filtro = {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''}; render(); break;
     case 'grp': { const g = el.dataset.g; S.openGroups.has(g) ? S.openGroups.delete(g) : S.openGroups.add(g); render(); break; }
     case 'grpAll': if (S.openGroups.size) S.openGroups.clear(); else C().grupos.forEach(g => S.openGroups.add(g.id)); render(); break;
