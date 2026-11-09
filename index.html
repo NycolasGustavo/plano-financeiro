@@ -788,7 +788,7 @@ function engine() {
     let m = r.inicio < start ? start : r.inicio;
     const last = r.fim && r.fim < end ? r.fim : end;
     while (m <= last) {
-      if (recNoMes(r, m) && !recLinks.has(rid + '|' + m)) push(m, {id:'v:' + rid + ':' + m, virtual:true, recorrencia:rid, tipo:r.tipo, titular:r.titular, competencia:m, data:recData(r, m), valor:recValor(r, m), descricao:r.descricao, categoria:r.categoria, meio:r.meio || 'conta', status:'previsto', fornecedor:r.fornecedor || '', natureza:r.natureza || 'recorrente', controle:r.controle || null, caixinha:r.caixinha || null, envelope:!!r.envelope});
+      if (recNoMes(r, m) && !recLinks.has(rid + '|' + m)) push(m, {id:'v:' + rid + ':' + m, virtual:true, recorrencia:rid, tipo:r.tipo, titular:r.titular, competencia:m, data:recData(r, m), valor:recValor(r, m), descricao:r.descricao, categoria:r.categoria, meio:r.meio || 'conta', status:'previsto', fornecedor:r.fornecedor || '', natureza:r.natureza || 'recorrente', controle:r.controle || null, caixinha:r.caixinha || null, envelope:!!r.envelope, tetoMeio:r.tetoMeio || null});
       m = ymAdd(m, 1);
     }
   }
@@ -816,6 +816,14 @@ function engine() {
       pool[k] = Math.max(0, p - orc);
       if (resta < v) { it.valorOriginal = v; it.valor = resta; it.consumido = round2(v - resta); }
     }
+  }
+  // teto de gastos de um cartão (recorrência com tetoMeio): o que já está na fatura desse cartão (compras feitas e previstas) abate a previsão
+  for (const arr of byMonth.values()) {
+    const gasto = {};
+    for (const it of arr) if (it.status !== 'pulado' && it.tipo === 'saida' && it.meio && !isFora(it.categoria)) { const k = it.titular + '|' + it.meio; gasto[k] = (gasto[k] || 0) + (Number(it.valor) || 0); }
+    for (const it of arr) { if (it.status !== 'previsto') continue; const tm = it.tetoMeio || (it.recorrencia && S.recs.get(it.recorrencia)?.tetoMeio); if (!tm) continue;
+      const k = it.titular + '|' + tm, p = gasto[k] || 0; if (p <= 0.004) continue;
+      const v = Number(it.valor) || 0, use = Math.min(p, v); if (it.valorOriginal == null) it.valorOriginal = v; it.valor = round2(v - use); it.consumido = round2((it.consumido || 0) + use); gasto[k] = p - use; }
   }
   // PJ: o que sobra no mês vira distribuição de lucros para o PF (previsto, até haver uma distribuição real)
   const pj = pjId(), pf = C().pjDistribuiPara || pessoas()[0]?.id, pjIni = si[pj]?.competencia;
