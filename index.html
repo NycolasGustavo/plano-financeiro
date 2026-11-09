@@ -799,7 +799,7 @@ function engine() {
   const consumivel = it => it.virtual ? !it.distrib : (it.origem === 'planilha' && !it.editado);
   // teto de impulsos (envelope): conta as compras pela data em que foram feitas, não pela fatura em que caem
   const envPorData = {};
-  for (const arr of byMonth.values()) for (const it of arr) if (it.status === 'realizado' && !it.recorrencia && !it.par && !isFora(it.categoria)) { const ym = (it.data || it.competencia + '-01').slice(0, 7), k = ym + '|' + it.titular + '|' + (it.impulso ? 'impulsos' : it.categoria) + '|' + it.tipo; envPorData[k] = (envPorData[k] || 0) + (Number(it.valor) || 0); }
+  for (const arr of byMonth.values()) for (const it of arr) if (it.status === 'realizado' && !it.recorrencia && !it.par && !isFora(it.categoria)) { const ym = (it.data || it.competencia + '-01').slice(0, 7), k = ym + '|' + it.titular + '|' + (it.impulso || it.categoria === 'passeios' ? 'impulsos' : it.categoria) + '|' + it.tipo; envPorData[k] = (envPorData[k] || 0) + (Number(it.valor) || 0); }
   for (const [ymE, arr] of byMonth) {
     const pool = {};
     for (const it of arr) if (it.status === 'realizado' && !it.recorrencia && !it.par && !isFora(it.categoria) && !it.impulso) { const k = it.titular + '|' + it.categoria + '|' + it.tipo + '|' + (it.meio || 'conta'); pool[k] = (pool[k] || 0) + (Number(it.valor) || 0); }
@@ -961,7 +961,7 @@ function ponte(ym, tit = S.tit) {
 function valorLinha(it) { const k = catTipo(it.categoria), v = Number(it.valor) || 0; if (k === 'entrada') return it.tipo === 'entrada' ? v : -v; if (k === 'saida') return it.tipo === 'saida' ? v : -v; return it.tipo === 'entrada' ? v : -v; }
 function linhasMes(ym, tit, filtro) { const o = {}; for (const it of itensMes(ym, tit)) { if (it.status === 'pulado' || it.meio === 'caixinha' || (filtro && !filtro(it))) continue; o[it.categoria] = round2((o[it.categoria] || 0) + valorLinha(it)); } return o; }
 // impulso = categoria Impulsos OU lançamento marcado como impulso (mantém a categoria original)
-const isImp = i => i.categoria === 'impulsos' || i.impulso === true;
+const isImp = i => i.categoria === 'impulsos' || i.categoria === 'passeios' || i.impulso === true; // passeios contam no teto de besteiras
 // teto de impulsos = soma das recorrências-envelope da categoria no mês
 function tetoImp(ym, t) { let v = 0; for (const [rid, r] of S.recs) if (r.envelope && r.categoria === 'impulsos' && r.titular === t && r.ativo !== false && r.inicio <= ym && (!r.fim || r.fim >= ym)) { const sv = [...S.lanc.values()].find(l => l.recorrencia === rid && l.competencia === ym); if (sv?.status === 'pulado') continue; v += recValor(r, ym); } return round2(v); } // teto retirado no mês (ocorrência pulada) = sem teto
 function gastoImp(ym, t) { const E = engine(); return round2([...(E.byMonth.get(ym) || []), ...(E.byMonth.get(ymAdd(ym, 1)) || []), ...(E.byMonth.get(ymAdd(ym, -1)) || [])].filter(i => i.titular === t && isImp(i) && i.status === 'realizado' && (i.data || i.competencia + '-01').startsWith(ym)).reduce((s, i) => s + (i.tipo === 'saida' ? i.valor : -i.valor), 0)); } // pela data da compra, mesmo no cartão
@@ -1948,7 +1948,7 @@ function vLanc() {
       <div class="filt-more ${S.filtOpen ? 'open' : ''}">
       <select class="input" id="f-tipo" data-filtro="tipo"><option value="">Entradas e saídas</option><option value="entrada" ${f.tipo === 'entrada' ? 'selected' : ''}>Só entradas</option><option value="saida" ${f.tipo === 'saida' ? 'selected' : ''}>Só saídas</option></select>
       <select class="input" id="f-status" data-filtro="status"><option value="">Confirmados e previstos</option><option value="realizado" ${f.status === 'realizado' ? 'selected' : ''}>Confirmados</option><option value="previsto" ${f.status === 'previsto' ? 'selected' : ''}>Previstos</option><option value="pulado" ${f.status === 'pulado' ? 'selected' : ''}>Pulados</option></select>
-      <select class="input" id="f-cat" data-filtro="cat"><option value="">Todas as categorias</option>${C().grupos.map(g => `<optgroup label="${esc(g.nome)}"><option value="${g.id}" ${f.cat === g.id ? 'selected' : ''}>Todo o grupo ${esc(g.nome)}</option>${C().categorias.filter(c => c.grupo === g.id).map(c => `<option value="${c.id}" ${f.cat === c.id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>`).join('')}</select>
+      <select class="input" id="f-cat" data-filtro="cat"><option value="">Todas as categorias</option>${C().grupos.map(g => `<optgroup label="${esc(g.nome)}"><option value="${g.id}" ${f.cat === g.id ? 'selected' : ''}>Todo o grupo ${esc(g.nome)}</option>${C().categorias.filter(c => c.grupo === g.id && (!c.oculta || c.id === f.cat)).map(c => `<option value="${c.id}" ${f.cat === c.id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>`).join('')}</select>
       <select class="input" id="f-meio" data-filtro="meio"><option value="">Conta e cartões</option>${meios.map(([id, n]) => `<option value="${id}" ${f.meio === id ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
       <select class="input" id="f-nat" data-filtro="nat"><option value="">Toda natureza</option>${NATUREZAS.map(([id, n]) => `<option value="${id}" ${f.nat === id ? 'selected' : ''}>${n}</option>`).join('')}</select>
       </div>
@@ -3071,7 +3071,7 @@ function vAjustes() {
 }
 function catOptions(tipo, sel, comTransf) {
   const gSel = catById(sel)?.grupo;
-  return C().grupos.filter(g => !tipo || g.tipo === tipo || g.id === gSel || (comTransf && tipo === 'saida' && g.tipo === 'transferencia')).map(g => `<optgroup label="${esc(g.nome)}">${C().categorias.filter(c => c.grupo === g.id).map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>`).join('');
+  return C().grupos.filter(g => !tipo || g.tipo === tipo || g.id === gSel || (comTransf && tipo === 'saida' && g.tipo === 'transferencia')).map(g => `<optgroup label="${esc(g.nome)}">${C().categorias.filter(c => c.grupo === g.id && (!c.oculta || c.id === sel)).map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>`).join('');
 }
 
 /* ============ formulário de lançamento ============ */
