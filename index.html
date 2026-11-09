@@ -2077,7 +2077,7 @@ const ATIV_FIN = new Set(['emprestimos', 'emprestimos-recebidos', 'financ-moto',
 const ATIV_INV = new Set(['casa-moveis', 'investimentos', 'caixinha-aporte', 'caixinha-resgate', 'rendimento-caixinha', 'casa-nova', 'reserva-isabella', 'caixinha-mov']);
 function atividade(cat) { if (ATIV_FIN.has(cat)) return 'fin'; if (ATIV_INV.has(cat)) return 'inv'; const t = grpById(catById(cat)?.grupo)?.tipo; if (t === 'transferencia') return 'tr'; if (t === 'ajuste') return 'aj'; return 'op'; }
 function atividadesMes(ym, tit) {
-  const o = {op: 0, fin: 0, inv: 0, tr: 0, aj: 0, det: {op: {}, fin: {}, inv: {}}}; let prev = false;
+  const o = {op: 0, fin: 0, inv: 0, tr: 0, aj: 0, det: {op: {}, fin: {}, inv: {}, tr: {}, aj: {}}}; let prev = false;
   for (const it of itensMes(ym, tit)) {
     if (it.status === 'pulado' || it.meio === 'caixinha') continue;
     const v = (it.tipo === 'entrada' ? 1 : -1) * (Number(it.valor) || 0); if (!v) continue;
@@ -2091,7 +2091,10 @@ function atividadesHTML(ms, tit) {
   const A = ms.map(m => atividadesMes(m, tit)), cur = ms.indexOf(S.mes);
   const td = (v, i, b) => `<td class="r num ${ms[i] === S.mes ? 'cur' : ''} ${A[i].prev ? 'fut' : ''} ${v < -0.004 ? 'neg' : ''}">${b ? '<b>' : ''}${Math.abs(v) > 0.004 ? (v < 0 ? '−' : '') + fmt(Math.abs(v)).replace('R$', '').trim() : '–'}${b ? '</b>' : ''}</td>`;
   const top = (det, n = 3) => Object.entries(det).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, n).map(([c, v]) => `${catNome(c)} ${fmtS(v)}`).join(' · ');
-  const row = (k, nome, sub) => `<tr class="tot"><td title="${esc(sub)}">${nome}<br><small class="muted" style="font-weight:400">${sub}</small></td>${A.map((a, i) => td(a[k], i)).join('')}</tr>`;
+  const open = S.openAtiv || (S.openAtiv = new Set());
+  const row = (k, nome, sub) => { const cats = [...new Set(A.flatMap(a => Object.keys(a.det[k] || {})))].sort((x, y) => A.reduce((s, a) => s + Math.abs(a.det[k]?.[y] || 0), 0) - A.reduce((s, a) => s + Math.abs(a.det[k]?.[x] || 0), 0)), can = cats.length > 0, op = can && open.has(k);
+    return `<tr class="grp ${op ? 'open' : ''}" ${can ? `data-act="ativGrp" data-a="${k}" style="cursor:pointer"` : ''}><td title="${esc(sub)}">${can ? '' : ''}${nome}<br><small class="muted" style="font-weight:400">${sub}</small></td>${A.map((a, i) => td(a[k], i)).join('')}</tr>` +
+      (op ? cats.map(c => `<tr class="cat"><td title="${esc(catNome(c))}">${esc(catNome(c))}</td>${A.map((a, i) => { const v = a.det[k]?.[c] || 0; return `<td class="r num cell ${ms[i] === S.mes ? 'cur' : ''} ${A[i].prev ? 'fut' : ''} ${v < -0.004 ? 'neg' : ''}" data-act="cellGo" data-m="${ms[i]}" data-c="${c}">${Math.abs(v) > 0.004 ? (v < 0 ? '−' : '') + fmt(Math.abs(v)).replace('R$', '').trim() : '<span class="muted">–</span>'}</td>`; }).join('')}</tr>`).join('') : ''); };
   const a0 = A[cur] || A[0];
   const leitura = (() => { const m = MESES[Number((ms[cur] || ms[0]).slice(5)) - 1];
     if (a0.op < 0 && a0.fin > 0) return `Em ${m}, o operacional fica negativo (${fmtS(a0.op)}) e quem fecha a conta é o financiamento (${fmtS(a0.fin)}).`;
@@ -2100,7 +2103,7 @@ function atividadesHTML(ms, tit) {
     return `Em ${m}, o operacional gera ${fmtS(a0.op)}; as dívidas levam ${fmtS(a0.fin)} e vão para investimentos ${fmtS(a0.inv)}.`; })();
   return `<section class="panel" style="margin-bottom:16px"><div class="dia-h"><h2 style="margin:0;font-size:17px">Fluxo de caixa por atividade</h2>
     <details class="help" style="margin:0"><summary>O que entra em cada um</summary><p><b>Operacional</b>: o dia a dia da casa — salários, distribuição da PJ, pensão, aluguel, contas, mercado, lanches, passeios, besteiras. <b>Financiamento</b>: empréstimos recebidos e pagos, financiamento da moto, parcelamento de fatura e encargos. <b>Investimento</b>: reservas e caixinhas (aportes, resgates e rendimentos) e compras grandes para a casa (móveis e eletros). Transferências entre vocês aparecem à parte e se anulam na visão do casal.</p></details></div>
-    <p style="margin:0 0 10px;font-size:13.5px">${leitura}</p>
+    <p style="margin:0 0 4px;font-size:13.5px">${leitura}</p><p class="muted" style="margin:0 0 10px;font-size:12px">Toque numa atividade para ver as categorias que entram nela; toque num valor para ver os lançamentos.</p>
     <div class="tbl-wrap"><table class="matrix"><thead><tr><th>${esc(titNome(tit))}</th>${ms.map(m => `<th class="r ${m === S.mes ? 'cur' : ''}">${ymShort(m)}</th>`).join('')}</tr></thead><tbody>
     ${row('op', 'Operacional', top(a0.det.op))}${row('fin', 'Financiamento', top(a0.det.fin) || 'sem dívidas no mês')}${row('inv', 'Investimento', top(a0.det.inv) || 'sem aportes no mês')}
     ${A.some(a => Math.abs(a.tr) > 0.004) ? row('tr', 'Transferências entre vocês', 'moto, ajustes de caixa') : ''}${A.some(a => Math.abs(a.aj) > 0.004) ? row('aj', 'Ajustes de conciliação', '') : ''}${A.some(a => Math.abs(a.dif) > 0.5) ? row('dif', 'Diferença de datas dos cartões', 'fatura paga em mês diferente da compra') : ''}
@@ -3545,6 +3548,7 @@ document.addEventListener('click', async e => {
     case 'diaSel': S.diaSel = el.dataset.d; render(); break;
     case 'diaNav': { const base = S.diaSel?.startsWith(S.mes) ? S.diaSel : (S.mes === HOJE_YM ? HOJE : S.mes + '-01'); const d = new Date(base + 'T12:00:00'); d.setDate(d.getDate() + Number(el.dataset.n)); const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; if (iso.startsWith(S.mes)) { S.diaSel = iso; render(); } break; }
     case 'movDia': { const it = findItem(el.dataset.id); if (!it) break; const d = new Date((it.data || S.mes + '-01') + 'T12:00:00'); d.setDate(d.getDate() + Number(el.dataset.n)); await moverItem(el.dataset.id, `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`); break; }
+    case 'ativGrp': { const st = S.openAtiv || (S.openAtiv = new Set()); st.has(el.dataset.a) ? st.delete(el.dataset.a) : st.add(el.dataset.a); render(); break; }
     case 'fStatus': S.filtro.status = el.dataset.v || ''; render(); break;
     case 'limpaFiltro': S.filtro = {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''}; render(); break;
     case 'grp': { const g = el.dataset.g; S.openGroups.has(g) ? S.openGroups.delete(g) : S.openGroups.add(g); render(); break; }
