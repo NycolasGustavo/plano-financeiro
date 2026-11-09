@@ -2087,36 +2087,12 @@ function atividadesMes(ym, tit) {
   const r = resumoMes(ym, tit); o.ini = r.ini; o.fim = r.fim; o.var = round2(o.op + o.fin + o.inv + o.tr + o.aj);
   o.dif = r.fim != null && r.ini != null ? round2(r.fim - r.ini - o.var) : 0; o.prev = prev; return o;
 }
-function atividadesHTML(ms, tit) {
-  const A = ms.map(m => atividadesMes(m, tit)), cur = ms.indexOf(S.mes);
-  const td = (v, i, b) => `<td class="r num ${ms[i] === S.mes ? 'cur' : ''} ${A[i].prev ? 'fut' : ''} ${v < -0.004 ? 'neg' : ''}">${b ? '<b>' : ''}${Math.abs(v) > 0.004 ? (v < 0 ? '−' : '') + fmt(Math.abs(v)).replace('R$', '').trim() : '–'}${b ? '</b>' : ''}</td>`;
-  const top = (det, n = 3) => Object.entries(det).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, n).map(([c, v]) => `${catNome(c)} ${fmtS(v)}`).join(' · ');
-  const open = S.openAtiv || (S.openAtiv = new Set());
-  const row = (k, nome, sub) => { const cats = [...new Set(A.flatMap(a => Object.keys(a.det[k] || {})))].sort((x, y) => A.reduce((s, a) => s + Math.abs(a.det[k]?.[y] || 0), 0) - A.reduce((s, a) => s + Math.abs(a.det[k]?.[x] || 0), 0)), can = cats.length > 0, op = can && open.has(k);
-    return `<tr class="grp ${op ? 'open' : ''}" ${can ? `data-act="ativGrp" data-a="${k}" style="cursor:pointer"` : ''}><td title="${esc(sub)}">${can ? '' : ''}${nome}<br><small class="muted" style="font-weight:400">${sub}</small></td>${A.map((a, i) => td(a[k], i)).join('')}</tr>` +
-      (op ? cats.map(c => `<tr class="cat"><td title="${esc(catNome(c))}">${esc(catNome(c))}</td>${A.map((a, i) => { const v = a.det[k]?.[c] || 0; return `<td class="r num cell ${ms[i] === S.mes ? 'cur' : ''} ${A[i].prev ? 'fut' : ''} ${v < -0.004 ? 'neg' : ''}" data-act="cellGo" data-m="${ms[i]}" data-c="${c}">${Math.abs(v) > 0.004 ? (v < 0 ? '−' : '') + fmt(Math.abs(v)).replace('R$', '').trim() : '<span class="muted">–</span>'}</td>`; }).join('')}</tr>`).join('') : ''); };
-  const a0 = A[cur] || A[0];
-  const leitura = (() => { const m = MESES[Number((ms[cur] || ms[0]).slice(5)) - 1];
-    if (a0.op < 0 && a0.fin > 0) return `Em ${m}, o operacional fica negativo (${fmtS(a0.op)}) e quem fecha a conta é o financiamento (${fmtS(a0.fin)}).`;
-    if (a0.op < 0) return `Em ${m}, o operacional fica negativo (${fmtS(a0.op)}): a casa gasta mais do que entra.`;
-    if (a0.inv < 0 && a0.op + a0.fin < -a0.inv - 0.004) return `Em ${m}, o operacional gera ${fmtS(a0.op)}, mas investimentos (${fmtS(a0.inv)}) passam do que sobra depois das dívidas (${fmtS(a0.fin)}).`;
-    return `Em ${m}, o operacional gera ${fmtS(a0.op)}; as dívidas levam ${fmtS(a0.fin)} e vão para investimentos ${fmtS(a0.inv)}.`; })();
-  return `<section class="panel" style="margin-bottom:16px"><div class="dia-h"><h2 style="margin:0;font-size:17px">Fluxo de caixa por atividade</h2>
-    <details class="help" style="margin:0"><summary>O que entra em cada um</summary><p><b>Operacional</b>: o dia a dia da casa — salários, distribuição da PJ, pensão, aluguel, contas, mercado, lanches, passeios, besteiras. <b>Financiamento</b>: empréstimos recebidos e pagos, financiamento da moto, parcelamento de fatura e encargos. <b>Investimento</b>: reservas e caixinhas (aportes, resgates e rendimentos) e compras grandes para a casa (móveis e eletros). Transferências entre vocês aparecem à parte e se anulam na visão do casal.</p></details></div>
-    <p style="margin:0 0 4px;font-size:13.5px">${leitura}</p><p class="muted" style="margin:0 0 10px;font-size:12px">Toque numa atividade para ver as categorias que entram nela; toque num valor para ver os lançamentos.</p>
-    <div class="tbl-wrap"><table class="matrix"><thead><tr><th>${esc(titNome(tit))}</th>${ms.map(m => `<th class="r ${m === S.mes ? 'cur' : ''}">${ymShort(m)}</th>`).join('')}</tr></thead><tbody>
-    ${row('op', 'Operacional', top(a0.det.op))}${row('fin', 'Financiamento', top(a0.det.fin) || 'sem dívidas no mês')}${row('inv', 'Investimento', top(a0.det.inv) || 'sem aportes no mês')}
-    ${A.some(a => Math.abs(a.tr) > 0.004) ? row('tr', 'Transferências entre vocês', 'moto, ajustes de caixa') : ''}${A.some(a => Math.abs(a.aj) > 0.004) ? row('aj', 'Ajustes de conciliação', '') : ''}${A.some(a => Math.abs(a.dif) > 0.5) ? row('dif', 'Diferença de datas dos cartões', 'fatura paga em mês diferente da compra') : ''}
-    <tr class="tot"><td><b>Variação do caixa</b></td>${A.map((a, i) => td(round2(a.var + a.dif), i, true)).join('')}</tr>
-    <tr class="tot"><td>Saldo no fim do mês</td>${A.map((a, i) => td(a.fim ?? 0, i)).join('')}</tr>
-    </tbody></table></div></section>`;
-}
 function vFluxo() {
   const ms = []; for (let k = S.fluxoAnt ? -6 : 0; k <= 11; k++) ms.push(ymAdd(S.mes, k));
   const tit = S.tit, casal = tit === 'casal';
   const agg = {}; // cat -> ym -> {v, prev}
   for (const m of ms) for (const it of itensMes(m, tit)) {
-    if (it.status === 'pulado') continue;
+    if (it.status === 'pulado' || it.meio === 'caixinha') continue; // pago de dentro da caixinha: não passa pela conta
     const sg = isFora(it.categoria) && it.tipo === 'saida' ? -1 : 1;
     const a = ((agg[it.categoria] ||= {})[m] ||= {v: 0, prev: false}); a.v += sg * it.valor; if (it.status === 'previsto') a.prev = true;
   }
@@ -2137,22 +2113,53 @@ function vFluxo() {
   const res = ms.map(m => resumoMes(m, tit));
   const mis = ms.map(m => metaInv(m, tit)); const isPJ = tit === pjId();
   const line = (lbl, arr, f = v => v, cls = '') => `<tr class="tot ${cls}"><td>${lbl}</td>${arr.map((v, i) => `<td class="r num ${ms[i] === S.mes ? 'cur' : ''} ${v != null && v < 0 ? 'neg' : ''}">${v == null ? '—' : (Math.round(f(v) * 100) < 0 ? '−' : '') + fmt(Math.abs(f(v))).replace('R$', '').trim()}</td>`).join('')}</tr>`;
-  return `${diarioHTML(S.mes, tit)}${atividadesHTML(ms, tit)}<div class="panel-head"><details class="help" style="margin:0"><summary>Como ler</summary><p>Valores em itálico ainda têm itens previstos. Clique num grupo para abrir as categorias e num valor para ver os lançamentos.</p></details>
-      <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="fluxoAnt">${S.fluxoAnt ? 'Esconder meses anteriores' : 'Mostrar 6 meses anteriores'}</button><button class="btn sm" data-act="grpAll">${S.openGroups.size ? 'Recolher tudo' : 'Abrir tudo'}</button>${tit !== 'casal' ? `<button class="btn sm" data-act="conciliar">${S.mes === HOJE_YM ? 'Conferir com o banco' : 'Conciliar saldo'}</button>` : ''}</span></div>
-    <div class="tbl-wrap"><table class="matrix"><thead>${head}</thead><tbody>
-      ${section('entrada')}${line('Total de entradas', res.map(r => r.e))}
+  const vari = res.map(r => r.fim == null || r.ini == null ? null : round2(r.fim - r.ini));
+  // sinal de caixa de cada categoria: entrada +, saída −, transferências e ajustes já vêm com sinal
+  const sgCat = c => isFora(c) ? 1 : (grpById(catById(c)?.grupo)?.tipo === 'saida' ? -1 : 1);
+  const usadas = Object.keys(agg);
+  const peso = c => ms.reduce((s, m) => s + Math.abs(agg[c][m]?.v || 0), 0);
+  // grupo expansível montado a partir de uma lista de categorias
+  const bloco = (key, nome, cats, sub = '') => { cats = cats.filter(c => agg[c]).sort((x, y) => peso(y) - peso(x)); if (!cats.length) return ''; const open = S.openGroups.has(key);
+    const tot = m => { let v = 0, p = false; for (const c of cats) { const a = agg[c][m]; if (!a) continue; v += sgCat(c) * a.v; p ||= a.prev; } return [round2(v), p]; };
+    return `<tr class="grp ${open ? 'open' : ''}" data-act="grp" data-g="${key}"><td>${nome}${sub ? `<br><small class="muted" style="font-weight:400">${sub}</small>` : ''}</td>${ms.map(m => { const [v, p] = tot(m); return cell(v, m, null, p); }).join('')}</tr>` +
+      (open ? cats.map(c => `<tr class="cat"><td title="${esc(catNome(c))}">${esc(catNome(c))}</td>${ms.map(m => cell(sgCat(c) * (agg[c][m]?.v || 0), m, c, agg[c][m]?.prev)).join('')}</tr>`).join('') : ''); };
+  const foraInv = usadas.filter(c => isFora(c) && atividade(c) === 'inv'), foraTr = usadas.filter(c => isFora(c) && atividade(c) !== 'inv');
+  const cxCart = res.map(r => r.fim == null || r.ini == null ? null : round2(r.fim - r.ini - r.res - r.t - r.a));
+  const temCx = cxCart.some(v => v && Math.abs(v) > 0.004), lblCx = casal && C().rendimentoRealMensal ? 'Cartões (data da fatura) e rendimento projetado' : 'Diferença de datas dos cartões';
+  const visao = S.fluxoVisao || 'ativ';
+  // visão por categoria (direta): entradas e saídas do resultado; reservas e transferências fora do resultado
+  const corpoCat = `${section('entrada')}${line('Total de entradas', res.map(r => r.e))}
       ${section('saida')}${line('Total de saídas', res.map(r => r.s))}
-      ${line('Resultado do mês', res.map(r => r.res))}
-      ${section('fora')}
-      <tr class="sec"><td>Saldos</td><td colspan="${ms.length}"></td></tr>
-      ${(() => { const cx = res.map(r => r.fim == null || r.ini == null ? null : round2(r.fim - r.ini - r.res - r.t - r.a)); return cx.some(v => v && Math.abs(v) > 0.004) ? line('Ajuste de caixa dos cartões', cx) : ''; })()}
+      ${line('<b>Resultado do mês</b>', res.map(r => r.res))}
+      ${foraInv.length || foraTr.length ? `<tr class="sec"><td>Fora do resultado</td><td colspan="${ms.length}"></td></tr>` : ''}
+      ${bloco('fora-inv', 'Reservas e caixinhas', foraInv, 'aportes e resgates')}
+      ${bloco('fora-tr', 'Transferências e ajustes', foraTr, 'entre vocês, entre contas, conciliação')}
+      ${temCx ? line(lblCx, cxCart) : ''}`;
+  // visão por atividade (indireta): operacional, financiamento, investimento
+  const ATV = [['op', 'Operacional', 'o dia a dia da casa'], ['fin', 'Financiamento', 'empréstimos, moto, juros'], ['inv', 'Investimento', 'reservas, caixinhas, móveis e eletros'], ['tr', 'Transferências', 'entre vocês e entre contas'], ['aj', 'Ajustes de conciliação', '']];
+  const corpoAtv = ATV.map(([k, n, sub]) => bloco('atv-' + k, n, usadas.filter(c => atividade(c) === k), sub)).join('') + (temCx ? line(lblCx, cxCart) : '');
+  const leitura = (() => { const a = atividadesMes(S.mes, tit), m = MESES[Number(S.mes.slice(5)) - 1];
+    if (a.op < 0 && a.fin > 0) return `Em ${m}, o operacional fica negativo (${fmtS(a.op)}) e quem fecha a conta é o financiamento (${fmtS(a.fin)}).`;
+    if (a.op < 0) return `Em ${m}, o operacional fica negativo (${fmtS(a.op)}): a casa gasta mais do que entra.`;
+    return `Em ${m}, o operacional gera ${fmtS(a.op)}, o financiamento ${fmtS(a.fin)} e o investimento ${fmtS(a.inv)}.`; })();
+  const rodape = `<tr class="sec"><td>Caixa</td><td colspan="${ms.length}"></td></tr>
+      ${line('<b>Variação do caixa</b>', vari)}
       ${line('Saldo inicial', res.map(r => r.ini))}
       ${ms.includes(HOJE_YM) && engine().hoje[tit] != null ? `<tr class="tot hoje"><td>Saldo hoje (${HOJE.split('-').reverse().slice(0, 2).join('/')})</td>${ms.map(m => `<td class="r num ${m === S.mes ? 'cur' : ''}">${m === HOJE_YM ? fmt(engine().hoje[tit]).replace('R$', '').trim() : ''}</td>`).join('')}</tr>` : ''}
-      ${line('Saldo final', res.map(r => r.fim))}
-      ${isPJ ? '' : line(`Teto de gastos (renda − ${mis[0].meta}%)`, mis.map(x => x.teto))}
-      ${isPJ ? '' : `<tr class="tot"><td>% da renda investido</td>${mis.map((x, i) => `<td class="r num ${ms[i] === S.mes ? 'cur' : ''} ${x.pct >= x.meta ? 'pos' : ''}">${x.ent > 0 ? x.pct.toLocaleString('pt-BR', {maximumFractionDigits: 1}) + '%' : '—'}</td>`).join('')}</tr>`}
+      ${line('<b>Saldo final</b>', res.map(r => r.fim))}
+      ${visao === 'cat' && !isPJ ? line(`Teto de gastos (renda − ${mis[0].meta}%)`, mis.map(x => x.teto)) + `<tr class="tot"><td>% da renda investido</td>${mis.map((x, i) => `<td class="r num ${ms[i] === S.mes ? 'cur' : ''} ${x.pct >= x.meta ? 'pos' : ''}">${x.ent > 0 ? x.pct.toLocaleString('pt-BR', {maximumFractionDigits: 1}) + '%' : '—'}</td>`).join('')}</tr>` : ''}`;
+  return `${diarioHTML(S.mes, tit)}<section class="panel flux-panel">
+    <div class="dia-h"><h2 style="margin:0;font-size:17px">Fluxo de caixa</h2>
+      <div class="seg sm" role="group" aria-label="Visão"><button data-act="fluxoVisao" data-v="ativ" aria-pressed="${visao === 'ativ'}">Por atividade</button><button data-act="fluxoVisao" data-v="cat" aria-pressed="${visao === 'cat'}">Por categoria</button></div></div>
+    <p style="margin:0 0 4px;font-size:13.5px">${visao === 'ativ' ? leitura : 'Entradas e saídas do resultado por categoria; reservas e transferências ficam fora do resultado.'}</p>
+    <div class="panel-head" style="margin:6px 0 8px"><details class="help" style="margin:0"><summary>Como ler</summary><p>As duas visões usam os mesmos lançamentos e chegam à mesma variação e ao mesmo saldo. <b>Por atividade</b>: Operacional é o dia a dia da casa (renda, contas, mercado, lanches, passeios, besteiras); Financiamento são empréstimos recebidos e pagos, moto, parcelamento de fatura e juros; Investimento são reservas e caixinhas (aportes, resgates e rendimentos) e compras grandes para a casa. <b>Por categoria</b>: entradas e saídas agrupadas. Toque num grupo (▸) para abrir as categorias e num valor para ver os lançamentos. Valores em itálico ainda têm previstos. Cartões entram no mês da fatura; a linha "Diferença de datas dos cartões" aparece quando uma fatura foi paga em outro mês.</p></details>
+      <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="fluxoAnt">${S.fluxoAnt ? 'Esconder meses anteriores' : 'Mostrar 6 meses anteriores'}</button><button class="btn sm" data-act="grpAll">${S.openGroups.size ? 'Recolher tudo' : 'Abrir tudo'}</button>${tit !== 'casal' ? `<button class="btn sm" data-act="conciliar">${S.mes === HOJE_YM ? 'Conferir com o banco' : 'Conciliar saldo'}</button>` : ''}</span></div>
+    <div class="tbl-wrap"><table class="matrix"><thead>${head}</thead><tbody>
+      ${visao === 'ativ' ? corpoAtv : corpoCat}
+      ${rodape}
     </tbody></table></div>
-    ${casal && C().rendimentoRealMensal ? `<p class="muted" style="font-size:12.5px">No Casal, o saldo dos meses futuros inclui rendimento real projetado de ${(C().rendimentoRealMensal * 100).toLocaleString('pt-BR')}% ao mês. Transferências entre vocês dois se anulam no Casal.</p>` : ''}`;
+    ${casal && C().rendimentoRealMensal ? `<p class="muted" style="font-size:12.5px">No Casal, o saldo dos meses futuros inclui rendimento real projetado de ${(C().rendimentoRealMensal * 100).toLocaleString('pt-BR')}% ao mês (entra na variação do caixa). Transferências entre vocês dois se anulam no Casal.</p>` : ''}
+  </section>`;
 }
 
 /* ============ cartões ============ */
@@ -3552,7 +3559,8 @@ document.addEventListener('click', async e => {
     case 'fStatus': S.filtro.status = el.dataset.v || ''; render(); break;
     case 'limpaFiltro': S.filtro = {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''}; render(); break;
     case 'grp': { const g = el.dataset.g; S.openGroups.has(g) ? S.openGroups.delete(g) : S.openGroups.add(g); render(); break; }
-    case 'grpAll': if (S.openGroups.size) S.openGroups.clear(); else C().grupos.forEach(g => S.openGroups.add(g.id)); render(); break;
+    case 'grpAll': if (S.openGroups.size) S.openGroups.clear(); else { C().grupos.forEach(g => S.openGroups.add(g.id)); ['fora-inv', 'fora-tr', 'atv-op', 'atv-fin', 'atv-inv', 'atv-tr', 'atv-aj'].forEach(k => S.openGroups.add(k)); } render(); break;
+    case 'fluxoVisao': S.fluxoVisao = el.dataset.v; render(); break;
     case 'cellGo': S.mes = el.dataset.m; S.filtro = {busca: '', tipo: '', status: '', cat: el.dataset.c, meio: '', nat: ''}; S.view = 'lanc'; S.cache = null; render(); break;
     case 'card': S.cartaoSel = el.dataset.id; S.fatMes = null; render(); break;
     case 'cardInat': S.cartaoInat = !S.cartaoInat; render(); break;
