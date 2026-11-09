@@ -552,6 +552,8 @@ details.help p{margin:0 0 6px}
 .imp-row .in-dt{margin-top:2px}
 .imp-row.sel{background:var(--accent-soft, rgba(201,100,66,.08))}
 .seg.sm button{padding:4px 10px;font-size:12.5px}
+.st-seg{margin-bottom:10px;flex-wrap:wrap;max-width:100%}
+@media (max-width:720px){.st-seg{display:flex;width:100%}.st-seg button{flex:1;padding:7px 4px;font-size:12px}}
 .conf-fat{display:flex;flex-direction:column;gap:4px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--sunken);font-size:12.5px}
 .conf-l{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start}
 .conf-l i{font-style:normal;font-weight:700;text-align:center}
@@ -1933,17 +1935,19 @@ function vLanc() {
   const f = S.filtro; const q = norm(f.busca);
   let itens = itensMes(S.mes).filter(i =>
     (!q || norm(i.descricao + ' ' + (i.fornecedor || '') + ' ' + catNome(i.categoria)).includes(q)) && (!f.nat || (i.natureza || 'avulso') === f.nat) && (!f.tipo || i.tipo === f.tipo) &&
-    (!f.status || i.status === f.status) && (!f.cat || i.categoria === f.cat || catById(i.categoria)?.grupo === f.cat) && (!f.meio || (i.meio || 'conta') === f.meio));
+    (f.status ? i.status === f.status : i.status !== 'pulado') && (!f.cat || i.categoria === f.cat || catById(i.categoria)?.grupo === f.cat) && (!f.meio || (i.meio || 'conta') === f.meio));
   itens.sort((a, b) => (a.tipo === b.tipo ? 0 : a.tipo === 'entrada' ? -1 : 1) || (a.data || '').localeCompare(b.data || '') || a.descricao.localeCompare(b.descricao));
   const tE = itens.filter(i => i.tipo === 'entrada' && i.status !== 'pulado' && !isFora(i.categoria)).reduce((s, i) => s + i.valor, 0);
   const tS = itens.filter(i => i.tipo === 'saida' && i.status !== 'pulado' && !isFora(i.categoria)).reduce((s, i) => s + i.valor, 0);
   const meios = [['conta', 'Conta'], ...C().cartoes.map(c => [c.id, c.nome])];
-  return `<div class="toolbar">
+  const nSt = {}; for (const i of itensMes(S.mes)) if ((!q || norm(i.descricao + ' ' + (i.fornecedor || '') + ' ' + catNome(i.categoria)).includes(q)) && (!f.tipo || i.tipo === f.tipo) && (!f.meio || (i.meio || 'conta') === f.meio) && (!f.cat || i.categoria === f.cat || catById(i.categoria)?.grupo === f.cat) && (!f.nat || (i.natureza || 'avulso') === f.nat)) nSt[i.status] = (nSt[i.status] || 0) + 1;
+  const segSt = `<div class="seg sm st-seg" role="group" aria-label="Situação">${[['', 'Todos', (nSt.previsto || 0) + (nSt.realizado || 0)], ['previsto', 'Em aberto', nSt.previsto || 0], ['realizado', 'Pagos', nSt.realizado || 0], ['pulado', 'Pulados', nSt.pulado || 0]].map(([v, n, c]) => `<button data-act="fStatus" data-v="${v}" aria-pressed="${(f.status || '') === v}">${n} <small class="muted">${c}</small></button>`).join('')}</div>`;
+  return `${segSt}<div class="toolbar">
       <input class="input" id="f-busca" type="search" placeholder="Buscar…" title="Busca em descrição, fornecedor e categoria" value="${esc(f.busca)}" style="flex:1;min-width:180px" data-filtro="busca">
       ${(() => { const n = ['tipo', 'status', 'cat', 'meio', 'nat'].filter(k => f[k]).length; return `<button class="btn filt-btn" data-act="filtros" aria-expanded="${!!S.filtOpen}">Filtros${n ? ` (${n})` : ''}</button>`; })()}
       <div class="filt-more ${S.filtOpen ? 'open' : ''}">
       <select class="input" id="f-tipo" data-filtro="tipo"><option value="">Entradas e saídas</option><option value="entrada" ${f.tipo === 'entrada' ? 'selected' : ''}>Só entradas</option><option value="saida" ${f.tipo === 'saida' ? 'selected' : ''}>Só saídas</option></select>
-      <select class="input" id="f-status" data-filtro="status"><option value="">Qualquer status</option><option value="realizado" ${f.status === 'realizado' ? 'selected' : ''}>Confirmados</option><option value="previsto" ${f.status === 'previsto' ? 'selected' : ''}>Previstos</option></select>
+      <select class="input" id="f-status" data-filtro="status"><option value="">Confirmados e previstos</option><option value="realizado" ${f.status === 'realizado' ? 'selected' : ''}>Confirmados</option><option value="previsto" ${f.status === 'previsto' ? 'selected' : ''}>Previstos</option><option value="pulado" ${f.status === 'pulado' ? 'selected' : ''}>Pulados</option></select>
       <select class="input" id="f-cat" data-filtro="cat"><option value="">Todas as categorias</option>${C().grupos.map(g => `<optgroup label="${esc(g.nome)}"><option value="${g.id}" ${f.cat === g.id ? 'selected' : ''}>Todo o grupo ${esc(g.nome)}</option>${C().categorias.filter(c => c.grupo === g.id).map(c => `<option value="${c.id}" ${f.cat === c.id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>`).join('')}</select>
       <select class="input" id="f-meio" data-filtro="meio"><option value="">Conta e cartões</option>${meios.map(([id, n]) => `<option value="${id}" ${f.meio === id ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
       <select class="input" id="f-nat" data-filtro="nat"><option value="">Toda natureza</option>${NATUREZAS.map(([id, n]) => `<option value="${id}" ${f.nat === id ? 'selected' : ''}>${n}</option>`).join('')}</select>
@@ -3407,6 +3411,7 @@ document.addEventListener('click', async e => {
     case 'filtros': S.filtOpen = !S.filtOpen; render(); break;
     case 'sobraGuardar': sobraGuardar(); break;
     case 'sobraDispensar': saveConfig({sobraDispensada: {...(C().sobraDispensada || {}), [S.tit + '|' + HOJE_YM]: true}}); toast('Sobra mantida na conta neste mês.'); break;
+    case 'fStatus': S.filtro.status = el.dataset.v || ''; render(); break;
     case 'limpaFiltro': S.filtro = {busca: '', tipo: '', status: '', cat: '', meio: '', nat: ''}; render(); break;
     case 'grp': { const g = el.dataset.g; S.openGroups.has(g) ? S.openGroups.delete(g) : S.openGroups.add(g); render(); break; }
     case 'grpAll': if (S.openGroups.size) S.openGroups.clear(); else C().grupos.forEach(g => S.openGroups.add(g.id)); render(); break;
