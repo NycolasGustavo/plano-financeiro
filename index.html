@@ -1189,18 +1189,36 @@ function impSugestao(imp, usados) {
   // pagamento de fatura de cartão (fica em "pagamentos")
   if (!imp.cartao && imp.tipo === 'saida') { const pg = [...S.pagamentos.entries()].find(([pid, p]) => !usados.has('pg:' + pid) && (cardById(p.cartao)?.titular || imp.titular) === imp.titular && cardById(p.cartao)?.tipo !== 'crediario' && Math.abs(Number(p.valor) - imp.valor) < 0.011 && Math.abs(diasEntre(p.data, imp.data)) <= 4);
     if (pg) return {acao: 'vincularPg', pid: pg[0], txt: `Pagamento da fatura ${esc(cardById(pg[1].cartao)?.nome || pg[1].cartao)} (${dm(pg[1].data)})`}; }
+  // caixinha do Mercado Pago ("Dinheiro reservado X" / "Dinheiro retirado X"): acha a caixinha pelo nome
+  const mCx = !imp.cartao && /dinheiro (reservado|retirado)\s+(.+)/.exec(d);
+  const cxBanco = mCx ? (() => { const ws = mCx[2].split(' ').filter(w => w.length > 2); return [...S.cxs.entries()].find(([, c]) => c.titular === imp.titular && c.ativa !== false && ws.length && ws.every(w => norm(c.nome + ' ' + (c.banco || '')).includes(w)))?.[0] || null; })() : null;
+  // pagamento de fatura por Pix/boleto (cartão de terceiro ou crédito) que ainda não tem pagamento registrado
+  if (!imp.cartao && imp.tipo === 'saida' && !mCx) {
+    const m = imp.data.slice(0, 7);
+    for (const mm of [m, ymAdd(m, 1)]) { const P = ponte(mm, imp.titular); if (!P) continue;
+      for (const f of P.faturas) { if (f.falta < 1 || !['terceiro', 'credito'].includes(f.card.tipo || 'credito') || usados.has('fat:' + f.card.id + mm)) continue;
+        const venc = `${mm}-${pad(Math.min(f.card.vencimento || 10, 28))}`; if (Math.abs(diasEntre(venc, imp.data)) > 15) continue;
+        if (Math.abs(f.falta - imp.valor) <= Math.max(0.011, f.falta * 0.005)) return {acao: 'pagarFatura', card: f.card, F: (Number(f.card.vencimento) || 10) > (Number(f.card.fechamento) || 1) ? mm : ymAdd(mm, -1), valor: imp.valor, falta: f.falta, txt: `Pagamento da fatura ${esc(f.card.nome)} de ${ymLong(mm)} (${fmt(f.falta)})`};
+        // fatura + outro previsto do mesmo dia pago junto (ex.: cartão do pai + ajuda PET)
+        const resto = round2(imp.valor - f.falta);
+        if (resto > 0.5) { const ex = (E0 => { for (const it of (E0.byMonth.get(mm) || [])) if (it.titular === imp.titular && it.tipo === 'saida' && (it.status === 'previsto' || (it.status === 'realizado' && !it.virtual && !it.pluggyId && !(it.pluggyIds || []).length)) && (!it.meio || it.meio === 'conta') && !usados.has(it.id) && Math.abs((Number(it.valor) || 0) - resto) < 0.011) return it; return null; })(engine());
+          if (ex) return {acao: 'pagarFatura', card: f.card, F: (Number(f.card.vencimento) || 10) > (Number(f.card.fechamento) || 1) ? mm : ymAdd(mm, -1), valor: f.falta, falta: f.falta, extra: ex, txt: `Pagamento da fatura ${esc(f.card.nome)} de ${ymLong(mm)} (${fmt(f.falta)}) + ${esc(ex.descricao)} (${fmt(ex.valor)})`}; }
+      } }
+  }
   const E = engine(), m0 = imp.data.slice(0, 7), cand = [];
   for (const m of [ymAdd(m0, -1), m0, ymAdd(m0, 1)]) for (const it of (E.byMonth.get(m) || [])) {
+    if (cxBanco && it.caixinha !== cxBanco) continue;
     if (it.titular !== imp.titular || it.tipo !== imp.tipo || it.status === 'pulado' || usados.has(it.id)) continue;
     if (imp.cartao ? it.meio !== imp.meio : (it.meio && it.meio !== 'conta')) continue;
     if ((it.pluggyId && it.pluggyId !== imp.pluggyId) || (it.pluggyIds || []).length) continue;
-    if (it.caixinha && !/caixinha|aplica|guard|rdb|resgat|cofrinho/.test(d)) continue; // guardar em caixinha só casa com movimento de caixinha
+    if (it.caixinha && !/caixinha|aplica|guard|rdb|resgat|cofrinho|reservad|retirad/.test(d)) continue; // guardar em caixinha só casa com movimento de caixinha
     const dv = Math.abs((Number(it.valor) || 0) - imp.valor), dd = Math.abs(diasEntre(it.data || m + '-01', imp.data));
     if (it.status === 'realizado' && dv < 0.011 && dd <= 4) cand.push({it, sc: dd, tipo: 'vincular'});
     else if (it.status === 'previsto' && !ORC_CATS.has(it.categoria) && dv <= Math.max(1, imp.valor * 0.03) && dd <= 12) cand.push({it, sc: 10 + dd + dv, tipo: 'quitar'});
   }
   cand.sort((a, b) => a.sc - b.sc);
   if (cand.length) return {acao: cand[0].tipo, it: cand[0].it};
+  if (cxBanco) { const cx = S.cxs.get(cxBanco), ap = mCx[1] === 'reservado'; return {acao: 'lancar', cat: ap ? 'caixinha-aporte' : 'caixinha-resgate', caixinha: cxBanco, forn: cx.nome, desc: `${ap ? 'Guardar na caixinha' : 'Tirar da caixinha'} ${cx.nome}`, nat: 'transferencia'}; }
   // compra estornada (cobrança + estorno se anulam) e caixinha do Nubank sem caixinha no app
   const ehEst = o => /estorno/.test(norm(o.descricao));
   if ([...S.imps.values()].some(o => o !== imp && o.accountId === imp.accountId && o.tipo !== imp.tipo && Math.abs(o.valor - imp.valor) < 0.011 && Math.abs(diasEntre(o.data, imp.data)) <= 5 && (ehEst(o) || ehEst(imp)))) return {acao: 'ignorar', motivo: 'Compra estornada: cobrança e estorno se anulam.'};
@@ -1216,7 +1234,7 @@ function impSugestao(imp, usados) {
 function impLista() {
   const usados = new Set(); const out = [];
   const pend = [...S.imps.entries()].filter(([, i]) => i.estado === 'novo').sort((a, b) => (b[1].data + b[1].hora).localeCompare(a[1].data + a[1].hora));
-  for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); out.push({id, imp, sg}); }
+  for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); if (sg.acao === 'pagarFatura') { usados.add('fat:' + sg.card.id + imp.data.slice(0, 7)); usados.add('fat:' + sg.card.id + ymAdd(imp.data.slice(0, 7), 1)); if (sg.extra) usados.add(sg.extra.id); } out.push({id, imp, sg}); }
   // segunda passada: o que sobrou para "lançar" pode ser a soma de lançamentos já feitos (ex.: Pix no crédito = gasto + encargos; dois Pix = moto + transferência)
   const E = engine(), grupos = new Map();
   for (const x of out) if (x.sg.acao === 'lancar') { const k = [x.imp.titular, x.imp.meio, x.imp.tipo, x.imp.data, norm(x.imp.descricao.split('|').pop())].join('|'); if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); }
@@ -1238,6 +1256,15 @@ async function impAplica(id, sgOver) {
   if (sg.acao === 'ignorar') return marca('ignorado', {motivo: sg.motivo || 'Ignorado'});
   if (sg.acao === 'jaLigado') return marca('vinculado', {lancId: sg.id});
   if (sg.acao === 'vincularPg') return marca('vinculado', {lancId: 'pagamento:' + sg.pid});
+  if (sg.acao === 'pagarFatura') {
+    const pid = 'pg-' + uid();
+    if (!await put('pagamentos', pid, {data: imp.data, valor: round2(sg.valor), cartao: sg.card.id, fatura: sg.F, origem: 'pluggy', pluggyId: imp.pluggyId})) return false;
+    let lids = 'pagamento:' + pid;
+    if (sg.extra) { const it = sg.extra; let lid = it.id; const extra = {...(it.status === 'previsto' ? {data: imp.data, editado: true} : {}), pluggyIds: [imp.pluggyId]};
+      if (it.virtual) { lid = 'rx-' + uid(); await put('lancamentos', lid, {...limpaVirtual(it), ...extra}); } else { const old = S.lanc.get(it.id); if (old) await put('lancamentos', it.id, {...old, ...extra, status: 'realizado'}); }
+      lids += ',' + lid; }
+    return marca('vinculado', {lancId: lids});
+  }
   if (sg.acao === 'vincularGrupo') { for (const it of sg.its) { const old = S.lanc.get(it.id); if (old) await put('lancamentos', it.id, {...old, pluggyIds: [...new Set([...(old.pluggyIds || []), imp.pluggyId])]}); } return marca('vinculado', {lancId: sg.its.map(it => it.id).join(',')}); }
   if (sg.acao === 'vincular' || sg.acao === 'quitar') {
     const it = sg.it; let lid = it.id, ok;
@@ -1250,7 +1277,7 @@ async function impAplica(id, sgOver) {
     const card = imp.cartao ? cardById(imp.meio) : null, lid = 'pg-' + imp.pluggyId;
     const descr = (imp.descricao.split('|').pop() || imp.descricao).trim();
     const ok = await put('lancamentos', lid, {titular: imp.titular, tipo: imp.tipo, valor: imp.valor, data: imp.data, competencia: card ? competenciaCartao(card, imp.data) : imp.data.slice(0, 7),
-      meio: imp.meio, categoria: sg.cat, fornecedor: sg.forn || descr, descricao: sg.desc || descr, natureza: isFora(sg.cat) ? 'transferencia' : sg.nat, status: 'realizado', origem: 'pluggy', pluggyId: imp.pluggyId,
+      meio: imp.meio, categoria: sg.cat, fornecedor: sg.forn || descr, descricao: sg.desc || descr, natureza: isFora(sg.cat) ? 'transferencia' : sg.nat, status: 'realizado', origem: 'pluggy', pluggyId: imp.pluggyId, ...(sg.caixinha ? {caixinha: sg.caixinha} : {}),
       ...(imp.parcela ? {parcela: imp.parcela, parcelas: imp.parcelas} : {})});
     return ok && marca('lancado', {lancId: lid});
   }
@@ -1413,12 +1440,14 @@ function vBanco() {
     if (sg.acao === 'jaLigado') return `Já lançado no app.`;
     if (sg.acao === 'ignorar') return `Ignorar: ${esc(sg.motivo)}`;
     if (sg.acao === 'vincularPg') return `Já está no app: ${sg.txt}.`;
+    if (sg.acao === 'pagarFatura') return `Registra o <b>${sg.txt}</b>: as compras do cartão já estão lançadas, este Pix só quita a fatura.`;
     if (sg.acao === 'vincularGrupo') return `Já está no app, somando: <b>${esc(sg.txt)}</b>.`;
     if (sg.acao === 'vincular') return `Já está no app: <b>${esc(sg.it.descricao)}</b> (${dm(sg.it.data)}).`;
     if (sg.acao === 'quitar') return `Quita o previsto <b>${esc(sg.it.descricao)}</b> (${fmt(sg.it.valor)}${Math.abs(sg.it.valor - imp.valor) > 0.004 ? ` → ${fmt(imp.valor)}` : ''}).`;
+    if (sg.caixinha) return `${sg.cat === 'caixinha-aporte' ? 'Guardar na' : 'Tirar da'} caixinha <b>${esc(S.cxs.get(sg.caixinha)?.nome || '')}</b> (sai e volta para a conta; não é gasto).`;
     return `Lançar como <b>${esc(catNome(sg.cat))}</b>${sg.forn ? ` · ${esc(sg.forn)}` : ''}${imp.cartao ? ` · fatura de ${ymLong(competenciaCartao(cardById(imp.meio) || {}, imp.data))}` : ''}.`;
   };
-  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? 'Lançar' : sg.acao === 'quitar' ? 'Quitar' : 'Confirmar';
+  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? (sg.caixinha ? 'Lançar na caixinha' : 'Lançar') : sg.acao === 'quitar' ? 'Quitar' : sg.acao === 'pagarFatura' ? 'Registrar pagamento' : 'Confirmar';
   const aplicaveis = L.filter(x => x.sg.acao !== 'semConta' && x.sg.acao !== 'lancar');
   const semConta = L.filter(x => x.sg.acao === 'semConta');
   const vis = L.filter(x => x.sg.acao !== 'semConta');
