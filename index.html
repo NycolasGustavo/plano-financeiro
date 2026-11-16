@@ -897,7 +897,7 @@ function engine() {
       const sd = saldo[t][m]; if (!sd) continue;
       const ini = round2(sd.ini - shift), fim0 = round2(sd.fim - shift), aj = round2(fim0 - min);
       if (Math.abs(aj) > 0.004) {
-        const base = {virtual: true, cxAuto: true, competencia: m, data: `${m}-28`, meio: 'conta', status: 'previsto', titular: t, caixinha: cx, natureza: 'transferencia', fornecedor: S.cxs.get(cx).nome, valor: Math.abs(aj)};
+        const base = {virtual: true, cxAuto: true, competencia: m, data: `${m}-${pad(new Date(Number(m.slice(0, 4)), Number(m.slice(5)), 0).getDate())}`, meio: 'conta', status: 'previsto', titular: t, caixinha: cx, natureza: 'transferencia', fornecedor: S.cxs.get(cx).nome, valor: Math.abs(aj)};
         push(m, aj > 0 ? {...base, id: 'vcm:' + t + ':' + m, tipo: 'saida', categoria: 'caixinha-aporte', descricao: `Acima do caixa mínimo → ${S.cxs.get(cx).nome}`}
                        : {...base, id: 'vcm:' + t + ':' + m, tipo: 'entrada', categoria: 'caixinha-resgate', descricao: `Cobrir o caixa mínimo ← ${S.cxs.get(cx).nome}`});
         const f = ((flow[t] ||= {})[m] ||= {e:0, s:0, eR:0, sR:0, t:0, a:0}); f.t = round2(f.t - aj);
