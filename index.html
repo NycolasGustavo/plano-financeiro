@@ -7,43 +7,43 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#F5F4ED" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F5FB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A0A10" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Plano">
 <script>try { const t = localStorage.getItem('pf.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
 <style>
 /* Layout: livro-caixa de trabalho — trilho à esquerda, régua de mês/titular fixa no topo, painéis.
    Visual inspirado no Claude: papel creme, tinta quase preta, acento argila, títulos em serifa, interface em sans. */
 :root{
-  --bg:#F5F4ED; --surface:#FAF9F5; --sunken:#EDEBE2; --ink:#141413; --muted:#6B6A64; --line:#E3E0D5;
-  --accent:#C96442; --accent-soft:#F4E4DB; --on-accent:#FFFFFF;
-  --pos:#3F7A4E; --pos-soft:#E3EEDF; --neg:#B3321F; --neg-soft:#F6DED7; --warn:#8A6418; --warn-soft:#F3E9D2;
-  --f-display:"Source Serif 4","Tiempos Text",Georgia,"Times New Roman",serif;
+  --bg:#F4F5FB; --surface:#FFFFFF; --sunken:#ECEEF7; --ink:#14142B; --muted:#5C5F77; --line:#E1E3EE;
+  --accent:#4A2DE0; --accent-soft:#ECE9FD; --on-accent:#FFFFFF;
+  --pos:#1C7A45; --pos-soft:#E1F3E8; --neg:#C4252C; --neg-soft:#FCE5E5; --warn:#8A5A00; --warn-soft:#FBEFD3;
+  --shadow:0 1px 2px rgba(20,20,43,.04),0 6px 20px rgba(20,20,43,.06); --ch1:#4A2DE0; --ch2:#0A7F86;
+  --f-display:"DM Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-body:"DM Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-num:"DM Sans",ui-sans-serif,system-ui,sans-serif;
-  --r:12px; --shadow:0 1px 2px rgba(20,20,19,.05),0 4px 14px rgba(20,20,19,.05);
-  --ch1:#C96442; --ch2:#1F6FA8; /* séries dos gráficos (validadas: CVD e contraste) */
+  --r:14px; /* séries dos gráficos: índigo e azul-petróleo (contraste ≥ 4,5:1 e distinguíveis em daltonismo) */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#262624; --surface:#30302E; --sunken:#1F1E1D; --ink:#FAF9F5; --muted:#A6A39A; --line:#3E3D39;
-  --accent:#D97757; --accent-soft:#4A3229; --on-accent:#1F1E1D;
-  --pos:#7FB98C; --pos-soft:#29362C; --neg:#EE8B78; --neg-soft:#45291F; --warn:#DDB264; --warn-soft:#3C3220;
-  --shadow:0 1px 2px rgba(0,0,0,.35); --ch1:#D06A48; --ch2:#4E97D1; color-scheme:dark}}
+  --bg:#0A0A10; --surface:#14141D; --sunken:#07070B; --ink:#F2F1FA; --muted:#A4A3BC; --line:#262636;
+  --accent:#9A8CFF; --accent-soft:#231D4A; --on-accent:#0A0A10;
+  --pos:#5ACF8C; --pos-soft:#10291B; --neg:#FF7B7B; --neg-soft:#371418; --warn:#F0BE4E; --warn-soft:#2E2410;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 0 0 1px rgba(154,140,255,.06); --ch1:#9A8CFF; --ch2:#35C3BA; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#262624; --surface:#30302E; --sunken:#1F1E1D; --ink:#FAF9F5; --muted:#A6A39A; --line:#3E3D39;
-  --accent:#D97757; --accent-soft:#4A3229; --on-accent:#1F1E1D;
-  --pos:#7FB98C; --pos-soft:#29362C; --neg:#EE8B78; --neg-soft:#45291F; --warn:#DDB264; --warn-soft:#3C3220;
-  --shadow:0 1px 2px rgba(0,0,0,.35); --ch1:#D06A48; --ch2:#4E97D1; color-scheme:dark}
+  --bg:#0A0A10; --surface:#14141D; --sunken:#07070B; --ink:#F2F1FA; --muted:#A4A3BC; --line:#262636;
+  --accent:#9A8CFF; --accent-soft:#231D4A; --on-accent:#0A0A10;
+  --pos:#5ACF8C; --pos-soft:#10291B; --neg:#FF7B7B; --neg-soft:#371418; --warn:#F0BE4E; --warn-soft:#2E2410;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 0 0 1px rgba(154,140,255,.06); --ch1:#9A8CFF; --ch2:#35C3BA; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--ink)}
 body{font:14.5px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
-h1,h2,h3{font-family:var(--f-display);font-weight:500;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1,h2,h3{font-family:var(--f-display);font-weight:650;margin:0;text-wrap:balance;letter-spacing:-.02em}
 h2{font-size:20px} h3{font-size:15px}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
 .muted{color:var(--muted)} .pos{color:var(--pos)} .neg{color:var(--neg)}
@@ -93,7 +93,7 @@ h2{font-size:20px} h3{font-size:15px}
 .cp-fontes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .cp-fonte{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:3px;cursor:pointer;color:var(--ink);font:inherit}
 .cp-fonte.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.cp-fonte .v{font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.cp-fonte .v{font-family:var(--f-display);font-size:22px;font-weight:650;font-variant-numeric:tabular-nums}
 .cp-fonte small{font-size:12px}
 .cp-grp{border-top:1px solid var(--line);padding:6px 0}
 .cp-grp-h{display:flex;justify-content:space-between;padding:6px 0;font-size:13px}
@@ -130,7 +130,7 @@ h2{font-size:20px} h3{font-size:15px}
 .pl-row + .pl-row{border-top:1px dashed var(--line);padding-top:12px}
 .pl-lbl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;padding:4px 2px;text-align:center}
 .pl-c{flex:1 1 0;min-width:0;padding:8px 10px;border-radius:8px;display:flex;flex-direction:column;gap:3px}
-.pl-c .v{font-family:var(--f-display);font-size:21px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+.pl-c .v{font-family:var(--f-display);font-size:21px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
 .pl-c .s{font-size:12px;color:var(--muted)}
 .pl-c.tot{background:var(--sunken)}
 .pl-c.hoje{background:var(--accent-soft)} .pl-c.hoje .eyebrow{color:var(--accent)}
@@ -141,7 +141,7 @@ h2{font-size:20px} h3{font-size:15px}
 .kpi-hoje{background:var(--accent-soft)}
 .kpi-hoje .eyebrow{color:var(--accent)}
 .kpi{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .kpi .s{font-size:12px;color:var(--muted)}
 .meter{height:5px;border-radius:3px;background:var(--sunken);overflow:hidden;margin-top:4px}
 .meter b{display:block;height:100%;background:var(--accent)}
@@ -225,15 +225,10 @@ tr.is-skip td{opacity:.45;text-decoration:line-through}
 .cards{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .cardpick{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left;min-width:190px;display:flex;flex-direction:column;gap:3px;color:var(--ink);font:inherit}
 /* identidade de cada emissor: cores da marca (sem logotipos) */
-.cbrand{--accent:#fff;--warn:#FFD166;--neg:#FF9A8B;background:linear-gradient(135deg,var(--ca) 0%,var(--cb) 100%)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 6px 18px rgba(0,0,0,.14);position:relative;overflow:hidden}
-.cbrand::after{content:"";position:absolute;right:-40px;top:-60px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08);pointer-events:none}
-.cbrand small,.cbrand .eyebrow,.cbrand .muted,.cbrand .in-card small,.cbrand span.muted{color:rgba(255,255,255,.85)!important}
-.cbrand .chip{background:rgba(255,255,255,.2)!important;color:#fff!important;border-color:transparent!important}
-.cbrand .lim-meter{background:rgba(255,255,255,.28)}
-.cbrand .neg{color:#FFD3CC!important}.cbrand .warn{color:#FFE7A3!important}
-.cbrand .mk{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;opacity:.92}
-.cbrand .emv{width:26px;height:19px;border-radius:4px;background:linear-gradient(135deg,#F2DD95,#B8913A);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);flex:0 0 auto}
-.cardpick.cbrand[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink)}
+.cbrand{border-top:4px solid var(--ca)!important;position:relative;overflow:hidden}
+.cbrand .mk{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.cbrand .emv{width:22px;height:16px;border-radius:4px;background:linear-gradient(135deg,var(--ca),var(--cb));flex:0 0 auto}
+.cardpick.cbrand[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
 .cardpick.cbrand[aria-pressed="false"]{opacity:.82}
 .mes-chk{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 8px;margin-top:6px}
 .mes-chk label{display:flex;align-items:center;gap:4px;font-size:12.5px;cursor:pointer}
@@ -307,7 +302,7 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .field label{font-size:12px;font-weight:600;color:var(--muted)}
 .field .input{width:100%}
 .fields2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.amount{font-family:var(--f-display);font-size:32px;font-weight:500;border:0;border-bottom:2px solid var(--line);background:none;padding:4px 0;width:100%;letter-spacing:-.02em}
+.amount{font-family:var(--f-display);font-size:32px;font-weight:650;border:0;border-bottom:2px solid var(--line);background:none;padding:4px 0;width:100%;letter-spacing:-.02em}
 .amount:focus{outline:none;border-color:var(--accent)}
 .tipo-seg{display:grid;grid-template-columns:1fr 1fr;background:var(--sunken);border-radius:8px;padding:3px}
 .tipo-seg button{border:0;background:none;padding:8px;border-radius:6px;cursor:pointer;font-weight:600;color:var(--muted)}
@@ -350,7 +345,7 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .in{display:flex;flex-direction:column;gap:18px;max-width:760px;margin:0 auto}
 .in-hero{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 20px 16px;box-shadow:var(--shadow)}
 .in-hero .eyebrow{display:block}
-.in-hero .big{font-family:var(--f-display);font-size:40px;line-height:1.1;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0 2px;white-space:nowrap}
+.in-hero .big{font-family:var(--f-display);font-size:40px;line-height:1.1;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0 2px;white-space:nowrap}
 .in-proj{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
 .in-proj b{font-variant-numeric:tabular-nums;color:var(--ink)}
 .in-proj b.neg{color:var(--neg)}
@@ -384,7 +379,7 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .in-card{flex:0 0 min(78%,280px);scroll-snap-align:start;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
 .in-card .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .in-card .top b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.in-card .v{font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.in-card .v{font-family:var(--f-display);font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .in-card small{font-size:12px;color:var(--muted)}
 .in-card .lim-meter{height:8px;border-radius:4px}
 .in-card.vou{background:var(--pos-soft);border-color:transparent}
@@ -424,7 +419,7 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .in-ht a{color:inherit}
 .in-ht{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .in-ht span{font-size:12px;color:var(--muted)}
-.in-ht b{font-family:var(--f-display);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
+.in-ht b{font-family:var(--f-display);font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1}
 .in-ht small{font-size:12px;color:var(--muted)}
 .st{align-self:flex-start;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;display:inline-flex;gap:4px;align-items:center}
 .st::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
@@ -514,8 +509,7 @@ details.help p{margin:0 0 6px}
 .empty p{margin:0;max-width:520px}
 .empty .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 /* cartões de marca: escurece o fundo para garantir contraste do texto branco */
-.cbrand{background:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.2)),linear-gradient(135deg,var(--ca) 0%,var(--cb) 100%)!important;text-shadow:0 1px 2px rgba(0,0,0,.25)}
-.cbrand .chip.neg{background:#B3321F!important;color:#fff!important}
+
 /* Início em duas colunas no desktop */
 .in-cols{display:flex;flex-direction:column;gap:18px}
 .in-col{display:flex;flex-direction:column;gap:18px;min-width:0}
@@ -560,7 +554,7 @@ details.help p{margin:0 0 6px}
 .dia-bh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:4px;font-size:13px}
 .dia-i{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}.dia-i:first-of-type{border-top:0}
 .dia-i.real .dia-n{color:var(--muted)}.dia-act{display:flex;gap:4px;align-items:center;justify-content:flex-end}.dia-date{width:132px;padding:4px 6px;font-size:12.5px}
-.warn{color:#b7791f}
+.warn{color:var(--warn)}
 @media (max-width:720px){.dia-chart{overflow-x:auto;-webkit-overflow-scrolling:touch}.dia-svg{min-width:640px}.dia-i{grid-template-columns:minmax(0,1fr) auto}.dia-act{grid-column:1/-1;justify-content:flex-start}}
 
 .st-seg{margin-bottom:10px;flex-wrap:wrap;max-width:100%}
@@ -616,6 +610,65 @@ details.help p{margin:0 0 6px}
   .matrix th:first-child,.matrix td:first-child{width:128px;min-width:128px;max-width:128px;white-space:normal;line-height:1.25}
   .matrix td.cur,.matrix th.cur{left:128px}
 }
+
+/* ===== dashboard ===== */
+@media (max-width:600px){.bar .month h1{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .month{gap:4px;min-width:0}.bar .tit-sel{max-width:34%}.bar .tema-btn{width:30px;height:30px;flex:none}}
+.dst-l.wv b{color:var(--warn)}
+.in-scroll{display:grid;grid-template-columns:1fr;gap:10px;overflow:visible;padding:0;margin:0}
+@media (min-width:700px){.in-scroll{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.in-card{flex:none}
+.db{gap:18px}
+.db-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.db-kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:var(--ink);min-width:0}
+button.db-kpi{cursor:pointer}button.db-kpi:hover{border-color:var(--accent)}
+.db-kpi b{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.db-kpi small{font-size:12px;color:var(--muted)}
+.db-kpi .warn{color:var(--warn)}
+.db-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:18px;align-items:start}
+.db-grid > *{min-width:0}
+.db-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.db-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.db-h h2{font-size:18px}
+.db-sub{font-size:12.5px;color:var(--muted);margin:-6px 0 0}
+.db-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px}
+.db-conq{display:flex;align-items:center;gap:12px;background:var(--accent-soft);border:0;border-radius:var(--r);padding:10px 14px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.db-conq > span:nth-child(2){display:flex;flex-direction:column;flex:1;min-width:0}.db-conq small{color:var(--muted);font-size:12px}
+.db-conq .chev{font-size:20px;color:var(--accent)}
+.jn-mini{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;flex:none}
+.gauge{width:100%;max-width:220px;height:auto;display:block}
+.gauge .gv{font-family:var(--f-num);font-size:44px;font-weight:700;fill:var(--ink);letter-spacing:-1px}
+.gauge .gs{font-size:12px;fill:var(--muted)}
+.nota-body{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}
+.pils{display:flex;flex-direction:column;gap:10px}
+.pil{display:grid;grid-template-columns:1fr auto;gap:0 8px}
+.pil .pn{font-weight:600;font-size:13.5px}.pil b{font-size:15px}
+.pil .lim-meter{grid-column:1/-1;height:8px;border-radius:4px}
+.pil small{grid-column:1/-1;font-size:12px;color:var(--muted);margin-top:2px}
+.nota-passo{background:var(--accent-soft);border-radius:10px;padding:10px 12px}
+.nota-passo p{margin:2px 0 0;font-size:13.5px}
+.fp-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13.5px}
+.fp-l li{padding-left:16px;position:relative;color:var(--ink)}
+.fp-l li::before{content:"";position:absolute;left:0;top:.5em;width:8px;height:8px;border-radius:50%;background:currentColor}
+.fp-l li.neg::before{background:var(--neg)}.fp-l li.warn::before{background:var(--warn)}.fp-l li.pos::before{background:var(--pos)}
+.fp-l li.neg,.fp-l li.warn,.fp-l li.pos{color:var(--ink)}
+.in-chart.fp{display:flex;flex-direction:column;gap:8px}
+.gi-l{display:flex;flex-direction:column;gap:14px}
+.gi-h{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.gi-h b{font-weight:600}
+.gi-m{height:10px;border-radius:5px;overflow:visible}
+.gi-m b{border-radius:5px}
+.gi-hoje{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)!important;opacity:.55!important;z-index:1;border-radius:1px}
+.gi small{font-size:12px;color:var(--muted)}
+.gi small .pos{color:var(--pos)}.gi small .warn{color:var(--warn)}.gi small .neg{color:var(--neg)}
+.gi-ed{display:flex;flex-direction:column;gap:8px;background:var(--sunken);border-radius:10px;padding:12px}
+.gi-er{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:8px}
+.in-nota{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.in-nota:hover{border-color:var(--accent)}
+.in-nota .tx{display:flex;flex-direction:column;gap:4px;min-width:0}
+.in-nota small{font-size:12.5px;color:var(--muted)}.in-nota .lk{color:var(--accent);font-weight:600}
+.in-nota .gauge .gv{font-size:48px}
+@media (max-width:1100px){.db-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:820px){.db-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.db-kpi b{font-size:22px}.nota-body{grid-template-columns:1fr}.nota-body .gauge{margin:0 auto;max-width:200px}}
 </style>
 
 <div class="app" id="app">
@@ -1140,7 +1193,7 @@ function cpEditando() { const a = document.activeElement; return !!(a && a.close
 document.addEventListener('focusout', () => { setTimeout(() => { if (S._renderPend && !cpEditando()) { S._renderPend = false; render(); } }, 400); });
 
 /* ============ render: moldura ============ */
-const VIEWS = [['inicio','Início'],['banco','Conferir banco'],['painel','Painel'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['openfinance','Open Finance'],['ajustes','Ajustes']];
+const VIEWS = [['inicio','Início'],['banco','Conferir banco'],['painel','Dashboard'],['lanc','Lançamentos'],['orcamento','Previsto x realizado'],['fluxo','Fluxo mensal'],['cartoes','Cartões'],['controles','Controles'],['compras','Compras do mês'],['fornecedores','Fornecedores'],['recs','Recorrências'],['caixinhas','Investimentos'],['dividas','Dívidas'],['importar','Importar extrato'],['openfinance','Open Finance'],['ajustes','Ajustes'],['conquistas','Conquistas']];
 const NAV_GRUPOS = [['Dia a dia', ['inicio', 'lanc', 'banco']], ['Planejamento', ['painel', 'fluxo', 'orcamento', 'recs']], ['Patrimônio', ['cartoes', 'caixinhas', 'dividas']], ['Rotinas', ['controles', 'compras', 'fornecedores', 'importar', 'openfinance', 'ajustes']]];
 const vNome = k => VIEWS.find(v => v[0] === k)?.[1] || k;
 const navBtn = k => `<button class="nav-btn" data-act="nav" data-v="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${svgI(k)}${vNome(k)}</button>`;
@@ -1150,23 +1203,25 @@ function renderRail() {
     NAV_GRUPOS.map(([g, ks]) => `<div class="nav-grp">${g}</div>` + ks.map(navBtn).join('')).join('') +
     `<div class="spacer"></div><div class="status">${S.lanc.size} lançamentos · ${S.recs.size} recorrências${S.user ? `<br>${esc(S.user.email)} · <a href="#" data-act="sair">sair</a>` : ''}</div>`;
 }
+function temaAtual() { const t = document.documentElement.dataset.theme; return t || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+function setTema(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem('pf.theme', t); } catch (_) {} const m = document.querySelectorAll('meta[name="theme-color"]'); m.forEach(x => x.setAttribute('content', t === 'dark' ? '#0A0A10' : '#F4F5FB')); }
 function renderBar() {
   const tits = [...C().titulares.map(t => [t.id, t.nome]), ['casal', 'Casal']];
-  const showMonth = !['inicio', 'banco', 'recs', 'dividas', 'caixinhas', 'importar', 'openfinance', 'ajustes'].includes(S.view);
+  const showMonth = !['inicio', 'conquistas', 'banco', 'recs', 'dividas', 'caixinhas', 'importar', 'openfinance', 'ajustes'].includes(S.view);
   $('#bar').innerHTML = `
     ${showMonth ? `<div class="month"><button class="icon-btn" data-act="mes" data-d="-1" aria-label="Mês anterior">‹</button><h1>${ymLong(S.mes)}</h1><button class="icon-btn" data-act="mes" data-d="1" aria-label="Próximo mês">›</button>
     ${S.mes !== HOJE_YM ? `<button class="btn ghost sm" data-act="hoje">Hoje</button>` : ''}</div>` : `<h1 style="font-size:24px">${VIEWS.find(v => v[0] === S.view)[1]}</h1>`}
     <div class="grow"></div>
     <div class="seg" role="group" aria-label="Titular">${tits.map(([id, n]) => `<button data-act="tit" data-t="${id}" aria-pressed="${S.tit === id}">${esc(n)}</button>`).join('')}</div>
     <select class="input tit-sel" id="tit-sel" aria-label="Titular">${tits.map(([id, n]) => `<option value="${id}" ${S.tit === id ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
-    ${S.db && !S.readOnly ? `<button class="btn primary bar-add" data-act="novoLanc" title="Novo lançamento (atalho: N)"><svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>Lançamento</button>` : ''}${S.user ? '<button class="btn ghost sm bar-sair" data-act="sair" title="Sair da conta">Sair</button>' : ''}`;
+    ${S.db && !S.readOnly ? `<button class="btn primary bar-add" data-act="novoLanc" title="Novo lançamento (atalho: N)"><svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>Lançamento</button>` : ''}<button class="icon-btn tema-btn" data-act="tema" aria-label="${temaAtual() === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}" title="${temaAtual() === 'dark' ? 'Tema claro' : 'Tema escuro'}">${temaAtual() === 'dark' ? '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10" cy="10" r="3.6"/><path d="M10 2.2v1.9M10 15.9v1.9M2.2 10h1.9M15.9 10h1.9M4.5 4.5l1.3 1.3M14.2 14.2l1.3 1.3M4.5 15.5l1.3-1.3M14.2 5.8l1.3-1.3"/></svg>' : '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8z"/></svg>'}</button>${S.user ? '<button class="btn ghost sm bar-sair" data-act="sair" title="Sair da conta">Sair</button>' : ''}`;
 }
 function render() {
   if (!S.configLoaded) return;
   renderRail(); renderBar(); renderTabbar();
   $('#fab').hidden = !S.db || S.readOnly;
   const v = $('#view');
-  const fn = {inicio: vInicio, banco: vBanco, openfinance: vOpenFinance, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
+  const fn = {conquistas: vConquistas, inicio: vInicio, banco: vBanco, openfinance: vOpenFinance, painel: vPainel, lanc: vLanc, orcamento: vOrcamento, controles: vControles, compras: vCompras, fluxo: vFluxo, cartoes: vCartoes, fornecedores: vFornecedores, recs: vRecs, dividas: vDividas, caixinhas: vCaixinhas, importar: vImportar, ajustes: vAjustes}[S.view] || vPainel;
   v.innerHTML = fn();
   if (S.view === 'importar') bindDrop();
 }
@@ -1500,7 +1555,7 @@ function niceTicks(lo, hi, n = 4) { if (hi - lo < 1) hi = lo + 1; const raw = (h
   const a = Math.floor(lo / st) * st, b = Math.ceil(hi / st) * st, t = []; for (let v = a; v <= b + st / 2; v += st) t.push(Math.round(v * 100) / 100); return t; }
 const mesCurto = m => MES3[Number(m.slice(5)) - 1];
 function tipHTML(title, rows) { return esc(title) + rows.map(([c, n, v]) => `<br>${c ? `<span class="sw" style="background:${c}"></span>` : ''}${esc(n)}: <b>${esc(v)}</b>`).join(''); }
-function lineChart({labels, series, hoje, W, H = 190, fmtY = fmtK, refY = null, refLabel = ''}) {
+function lineChart({labels, series, hoje, W, H = 190, fmtY = fmtK, refY = null, refLabel = '', refColor = 'var(--pos)'}) {
   const padL = 46, padR = 12, padT = 12, padB = 24, iw = W - padL - padR, ih = H - padT - padB, n = labels.length;
   const all = series.flatMap(s => s.vals.filter(v => v != null)); if (refY != null) all.push(refY); all.push(0);
   const tk = niceTicks(Math.min(...all), Math.max(...all)), lo = tk[0], hi = tk[tk.length - 1];
@@ -1509,7 +1564,7 @@ function lineChart({labels, series, hoje, W, H = 190, fmtY = fmtK, refY = null, 
   const step = Math.max(1, Math.ceil(n / Math.floor(iw / 38)));
   g += labels.map((l, i) => i % step === 0 || i === n - 1 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${esc(l)}</text>` : '').join('');
   if (hoje != null && hoje > 0 && hoje < n) g += `<line class="hoje" x1="${x(hoje)}" x2="${x(hoje)}" y1="${padT}" y2="${padT + ih}"/><text x="${x(hoje)}" y="${padT - 2}" text-anchor="middle" style="font-size:10px">hoje</text>`;
-  if (refY != null) g += `<line x1="${padL}" x2="${W - padR}" y1="${y(refY)}" y2="${y(refY)}" stroke="var(--pos)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${padL + 6}" y="${y(refY) - 5}" text-anchor="start" class="lbl" style="font-size:10.5px">${esc(refLabel)}</text>`;
+  if (refY != null) g += `<line x1="${padL}" x2="${W - padR}" y1="${y(refY)}" y2="${y(refY)}" stroke="${refColor}" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${padL + 6}" y="${y(refY) - 5}" text-anchor="start" class="lbl" style="font-size:10.5px">${esc(refLabel)}</text>`;
   const path = (vals, a, b) => { let d = '', pen = false; for (let i = a; i <= b; i++) { const v = vals[i]; if (v == null) { pen = false; continue; } d += (pen ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); pen = true; } return d; };
   for (const s of series) { const cut = hoje == null ? n - 1 : hoje;
     if (cut >= 0) g += `<path d="${path(s.vals, 0, cut)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
@@ -1622,16 +1677,16 @@ function metasReservaHTML(cxs, tit) {
 function renderTabbar() {
   const tb = $('#tabbar'); if (!tb) return;
   const cur = k => S.view === k ? 'aria-current="page"' : '';
-  const naMais = !['inicio', 'lanc', 'cartoes'].includes(S.view);
+  const naMais = !['inicio', 'lanc', 'painel'].includes(S.view);
   const podeLancar = S.db && !S.readOnly;
   tb.innerHTML = `<button data-act="nav" data-v="inicio" ${cur('inicio')}>${svgI('inicio')}Início</button>
     <button data-act="nav" data-v="lanc" ${cur('lanc')}>${svgI('lanc')}Lançamentos</button>
     <button class="plus" data-act="novoLanc" aria-label="Novo lançamento" ${podeLancar ? '' : 'disabled'}><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg></span></button>
-    <button data-act="nav" data-v="cartoes" ${cur('cartoes')}>${svgI('cartoes')}Cartões</button>
+    <button data-act="nav" data-v="painel" ${cur('painel')}>${svgI('painel')}Dashboard</button>
     <button data-act="mais" ${naMais ? 'aria-current="page"' : ''}>${svgI('mais')}Mais</button>`;
   const sh = $('#sheet');
   sh.innerHTML = S.maisOpen ? `<div class="sheet-scrim" data-act="maisFechar"></div><div class="msheet" role="dialog" aria-label="Todas as seções"><div class="grab"></div><div class="sheet-grid">
-    ${NAV_GRUPOS.map(([g, ks]) => { const r = ks.filter(k => !['inicio', 'lanc', 'cartoes'].includes(k)); return r.length ? `<div class="nav-grp">${g}</div>` + r.map(navBtn).join('') : ''; }).join('')}</div>
+    ${NAV_GRUPOS.map(([g, ks]) => { const r = ks.filter(k => !['inicio', 'lanc', 'painel'].includes(k)); return r.length ? `<div class="nav-grp">${g}</div>` + r.map(navBtn).join('') : ''; }).join('')}</div>
     ${S.user ? `<div class="who">${esc(S.user.email)} · <a href="#" data-act="sair">sair</a></div>` : ''}</div>` : '';
 }
 const ORC_CATS = new Set(['mercado', 'mercado-np', 'lanches', 'marmitas']);
@@ -1671,8 +1726,8 @@ function destinoHTML(ym, tit) {
       ${(() => { const cm = (C().caixaMinimo || {})[tit], min = Number(cm?.valor) || 0, rs = cm?.cx ? S.cxs.get(cm.cx)?.nome : null;
         if (!min) return ln(`Sobra livre no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', D.sobra > 0.004 ? `no fechamento, vai para "${SOBRA_NOME}"${cx ? '' : ' (a caixinha é criada na primeira vez)'}` : D.sobra < -0.004 ? 'o mês fecha no vermelho: revise o teto ou os aportes' : 'tudo já tem destino', 'tot ' + (D.sobra < -0.004 ? 'neg' : ''));
         const ex = round2(D.sobra - min);
-        return ln(`Saldo no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', `caixa mínimo ${fmt(min)}`, 'tot ' + (ex < -0.004 ? 'neg' : '')) +
-          (Math.abs(ex) > 0.004 ? ln(ex > 0 ? `Vai para ${esc(rs || 'a reserva')} no fechamento` : `Falta para o caixa mínimo`, ex, ex > 0 ? '' : '− ', ex > 0 ? 'o que passar do caixa mínimo' : `sai de ${esc(rs || 'a reserva')} se não ajustar os gastos`, ex > 0 ? 'pos' : 'neg') : ''); })()}
+        return ln(`Saldo no fim de ${mesN}`, D.sobra, D.sobra < 0 ? '− ' : '', `caixa mínimo ${fmt(min)}`, 'tot ' + (D.sobra < -0.004 ? 'neg' : ex < -0.004 ? 'wv' : '')) +
+          (Math.abs(ex) > 0.004 ? ln(ex > 0 ? `Vai para ${esc(rs || 'a reserva')} no fechamento` : `Falta para o caixa mínimo`, ex, ex > 0 ? '' : '− ', ex > 0 ? 'o que passar do caixa mínimo' : `sai de ${esc(rs || 'a reserva')} se não ajustar os gastos`, ex > 0 ? 'pos' : D.sobra < -0.004 ? 'neg' : 'wv') : ''); })()}
     </div></section>`;
 }
 // fechamento: o que sobrou na conta no fim do mês anterior, descontado o que sai antes do salário, vai para a Sobra a destinar
@@ -1805,6 +1860,7 @@ function vInicio() {
     ${(() => { const n = impLista().filter(x => x.sg.acao !== 'semConta' && ids.includes(x.imp.titular)).length; return n ? `<button class="in-alert" data-act="nav" data-v="banco" style="text-align:left;border:0;cursor:pointer;font:inherit;color:var(--ink)"><b>${n} ${n > 1 ? 'transações' : 'transação'} do banco para conferir</b><br><span class="muted" style="font-size:12.5px">Vieram pelo Open Finance. Toque para confirmar ou lançar.</span></button>` : ''; })()}
     ${negM ? `<div class="in-alert neg">O saldo projetado fica negativo em ${ymLong(negM.m)} (${fmt(negM.fim)}). Vale rever antes de gastar.</div>` : ''}
     ${(() => { const F = fluxoDiario(ym, tit); if (!F || F.min >= -0.004) return ''; return `<div class="in-alert neg" style="display:flex;flex-direction:column;gap:4px"><b>A conta fica negativa entre ${dm(F.negDe)} e ${dm(F.negAte)}</b><span class="muted" style="font-size:13px">Menor saldo ${fmt(F.min)} em ${dm(F.minD)}. Veja o dia a dia em Fluxo de caixa.</span><span><button class="btn sm" data-act="nav" data-v="fluxo">Ver dia a dia</button></span></div>`; })()}
+    ${fpHTML(tit, true)}
     ${destinoHTML(ym, tit)}
     <section class="in-sec"><div class="in-sec-h"><h2>Próximos 15 dias</h2><button class="btn ghost sm" data-act="inicioMes" data-m="${ym}">Ver o mês</button></div>
       <div class="in-list">${proximos.length ? proximos.slice(0, 12).map(linhaAcao).join('') + (proximos.length > 12 ? `<div class="in-empty"><button class="btn ghost sm" data-act="nav" data-v="lanc">Ver mais ${proximos.length - 12}</button></div>` : '') : '<div class="in-empty">Nada a pagar ou receber nos próximos 15 dias.</div>'}</div></section>
@@ -1812,7 +1868,7 @@ function vInicio() {
       <p class="muted" style="font-size:12.5px;margin:0 2px 8px">Já pagou ou recebeu? Marque como feito. Se ainda vai acontecer, abra e ajuste a data. Esses valores continuam contando na projeção do mês.</p>
       <div class="in-list">${abertos.map(linhaAcao).join('')}</div></details></section>` : ''}
     </div><div class="in-col">
-    ${saudeHTML(tit, ids, cxs, E)}
+    ${notaHTML(tit, true)}
     ${cards.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Cartões e vouchers</h2><button class="btn ghost sm" data-act="nav" data-v="cartoes">Detalhes</button></div>
       <div class="in-scroll">${cards.map(cardTile).join('')}</div></section>` : ''}
     ${cxs.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Investimentos</h2><button class="btn ghost sm" data-act="nav" data-v="caixinhas">Abrir</button></div>
@@ -1822,12 +1878,132 @@ function vInicio() {
           ${M ? `<div class="lim-meter"><b style="width:${M.pct}%;background:var(--accent)"></b></div>` : ''}</div>`; }).join('')}</div></section>` : ''}
     ${metasReservaHTML(cxs, tit)}
     ${metas.length ? `<section class="in-sec"><div class="in-sec-h"><h2>Metas do mês</h2></div><div class="in-list">${metas.join('')}</div></section>` : ''}
-    <section class="in-sec"><div class="in-sec-h"><h2>Próximos meses</h2><button class="btn ghost sm" data-act="nav" data-v="fluxo">Fluxo</button></div>
-      <div class="in-list">${meses.map(x => `<button class="in-mes" data-act="inicioMes" data-m="${x.m}"><span class="m">${MES3[Number(x.m.slice(5)) - 1]}/${x.m.slice(2, 4)}</span>
-        <span class="trk"><b style="width:${Math.max(2, Math.abs(x.fim) / mx * 100)}%;background:var(--${x.fim < -0.004 ? 'neg' : 'accent'})"></b></span>
-        <span class="val"><b class="${x.fim < -0.004 ? 'neg' : ''}">${fmt(x.fim)}</b><small>${x.m === ym ? 'fim do mês' : `mês ${fmtS(x.res)}`}${x.cx > 0.004 ? ` · caixinhas ${fmtK(x.cx)}` : ''}</small></span></button>`).join('')}</div>
-      <p class="muted" style="font-size:12px;margin:0 2px">Saldo na conta no fim de cada mês, se tudo sair como previsto. Toque num mês para ver o detalhe.</p></section>
   </div></div></div>`;
+}
+
+/* ============ dashboard: nota de saúde, fluxo projetado, gastos que importam ============ */
+const cxsDe = tit => { const ids = idsDe(tit); return [...S.cxs].filter(([, c]) => c.ativa !== false && (tit === 'casal' ? ids.includes(c.titular) : c.titular === tit)).map(([id, c]) => ({id, c, s: cxSerie(id)})); };
+const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+const faixaNota = n => n >= 70 ? {k: 'pos', t: 'Bom'} : n >= 40 ? {k: 'warn', t: 'Atenção'} : {k: 'neg', t: 'Crítico'};
+function notaSaude(tit) {
+  const ym = HOJE_YM, ids = idsDe(tit), isPJ = tit === pjId(), cxs = cxsDe(tit);
+  const r0 = resumoMes(ym, tit), EV = endividamento(tit);
+  const ant = [1, 2, 3].map(k => resumoMes(ymAdd(ym, -k), tit).s).filter(v => v > 0), despMed = ant.length ? ant.reduce((a, b) => a + b, 0) / ant.length : r0.s;
+  const res = cxs.filter(x => x.c.tipo === 'reserva').reduce((a, x) => a + x.s.hoje, 0), meses = despMed > 0 ? res / despMed : 0;
+  // Controle: resultado do mês, teto de impulsos e % guardado
+  const ctl = [];
+  const ent = r0.e || 0; ctl.push({n: 'Resultado do mês', v: r0.res >= 0 ? 100 : ent > 0 ? clamp(100 + r0.res / ent * 300) : 0});
+  let T = 0, g = 0; for (const t of ids) { const tt = tetoImp(ym, t); if (tt) { T += tt; g += gastoImp(ym, t); } }
+  if (T) { const r = g / T; ctl.push({n: 'Teto de impulsos', v: r <= 0.8 ? 100 : r >= 1.3 ? 0 : clamp((1.3 - r) / 0.5 * 100)}); }
+  const mi = isPJ ? null : metaInv(ym, tit); if (mi && mi.ent > 0) ctl.push({n: 'Guardado no mês', v: clamp(mi.pct / mi.meta * 100)});
+  const vCtl = ctl.reduce((a, x) => a + x.v, 0) / ctl.length;
+  // Reserva: meses de custo guardados (meta 6)
+  const vRes = clamp(meses / 6 * 100);
+  // Dívida: atraso e cobertura por ativos
+  let vDiv = 100; const pVc = EV.tot > 0 ? EV.vc / EV.tot * 100 : 0, cob = EV.tot > 0.01 ? EV.at / EV.tot * 100 : 0;
+  if (EV.tot > 0.01) vDiv = (clamp(100 - pVc) + clamp(cob / 2)) / 2;
+  const pil = [
+    {k: 'ctl', nome: 'Controle', v: Math.round(vCtl), det: ctl.map(x => `${x.n} ${Math.round(x.v)}`).join(' · ')},
+    {k: 'res', nome: 'Reserva', v: Math.round(vRes), det: `${meses.toLocaleString('pt-BR', {maximumFractionDigits: 1})} de 6 meses de custo guardados`},
+    {k: 'div', nome: 'Dívida', v: Math.round(vDiv), det: EV.tot > 0.01 ? `${Math.round(pVc)}% em atraso · ativos cobrem ${Math.round(cob)}%` : 'sem dívidas em aberto'}];
+  const nota = Math.round(pil.reduce((a, x) => a + x.v, 0) / pil.length);
+  const pior = [...pil].sort((a, b) => a.v - b.v)[0];
+  let passo;
+  if (pior.k === 'div') passo = EV.vc > 0.01 ? `Priorize as dívidas em atraso (${fmt(EV.vc)}): elas pesam mais que qualquer outro ponto da nota.` : `Use o caixa de dívidas para reduzir o saldo devedor de ${fmt(EV.tot)}.`;
+  else if (pior.k === 'res') { const alvo = despMed, falta = Math.max(0, alvo - res); passo = falta > 0.01 ? `Monte o primeiro mês de reserva: faltam ${fmt(falta)} para cobrir 1 mês de custo (${fmt(alvo)}).` : `Siga aportando na reserva até 6 meses de custo (${fmt(despMed * 6)}).`; }
+  else passo = r0.res < 0 ? `O mês fecha com ${fmtS(r0.res)}. Reveja os gastos variáveis antes do fim do mês.` : T && g > T ? `O teto de impulsos estourou em ${fmt(g - T)}. Segure as besteiras até o fim do mês.` : 'Mantenha o ritmo: resultado positivo e impulsos dentro do teto.';
+  return {nota, pil, passo, faixa: faixaNota(nota), meses, EV};
+}
+function gaugeSVG(n, k) {
+  const W = 220, H = 128, cx = 110, cy = 112, r = 92, a = Math.PI * (1 - clamp(n) / 100);
+  const ex = cx + r * Math.cos(a), ey = cy - r * Math.sin(a);
+  return `<svg class="gauge" viewBox="0 0 ${W} ${H}" role="img" aria-label="Nota de saúde ${n} de 100"><path d="M${cx - r} ${cy}A${r} ${r} 0 0 1 ${cx + r} ${cy}" fill="none" stroke="var(--sunken)" stroke-width="16" stroke-linecap="round"/>${n > 0 ? `<path d="M${cx - r} ${cy}A${r} ${r} 0 0 1 ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="var(--${k})" stroke-width="16" stroke-linecap="round"/>` : ''}<text x="${cx}" y="${cy - 14}" text-anchor="middle" class="gv">${n}</text><text x="${cx}" y="${cy + 6}" text-anchor="middle" class="gs">de 100</text></svg>`;
+}
+function notaHTML(tit, compacto) {
+  if (tit === pjId()) return '';
+  const N = notaSaude(tit);
+  if (compacto) return `<button class="in-nota" data-act="nav" data-v="painel"><span class="gm">${gaugeSVG(N.nota, N.faixa.k)}</span><span class="tx"><span class="eyebrow">Nota de saúde</span><b><span class="st ${N.faixa.k === 'pos' ? 'ok' : N.faixa.k === 'warn' ? 'at' : 'cr'}">${N.faixa.t}</span></b><small>${esc(N.passo)}</small><small class="lk">Ver todos os indicadores no Dashboard</small></span></button>`;
+  return `<section class="db-card db-nota"><div class="db-h"><h2>Nota de saúde</h2><span class="st ${N.faixa.k === 'pos' ? 'ok' : N.faixa.k === 'warn' ? 'at' : 'cr'}">${N.faixa.t}</span></div>
+    <div class="nota-body">${gaugeSVG(N.nota, N.faixa.k)}<div class="pils">${N.pil.map(x => { const f = faixaNota(x.v); return `<div class="pil"><span class="pn">${x.nome}</span><b class="num">${x.v}</b><div class="lim-meter"><b style="width:${x.v}%;background:var(--${f.k})"></b></div><small>${esc(x.det)}</small></div>`; }).join('')}</div></div>
+    <div class="nota-passo"><span class="eyebrow">Próximo passo</span><p>${esc(N.passo)}</p></div>
+    <details class="help"><summary>Como a nota é calculada</summary><p>Média de três pilares, de 0 a 100. <b>Controle</b>: resultado do mês, teto de impulsos e % da renda guardado. <b>Reserva</b>: meses de custo guardados nas reservas, meta de 6. <b>Dívida</b>: parte em atraso e quanto os ativos cobrem da dívida. Abaixo de 40 é crítico, de 40 a 69 atenção, a partir de 70 bom.</p></details></section>`;
+}
+// fluxo projetado: saldo dia a dia, de 7 dias atrás até o fim do período
+function fdMemo(m, t) { const E = engine(); E._fd ||= new Map(); const k = m + '|' + t; if (!E._fd.has(k)) E._fd.set(k, fluxoDiario(m, t)); return E._fd.get(k); }
+function fpSerie(t, dias) {
+  const ini = isoAdd(HOJE, -7), fim = isoAdd(HOJE, dias), out = new Map();
+  for (let m = ini.slice(0, 7); m <= fim.slice(0, 7); m = ymAdd(m, 1)) { const F = fdMemo(m, t); if (!F) continue; for (const d of F.dias) if (d.d >= ini && d.d <= fim) out.set(d.d, round2(d.saldo)); }
+  return out;
+}
+const FP_PER = [['1M', 'Próx. 30 dias', 30], ['3M', '3 meses', 91], ['6M', '6 meses', 182], ['12M', '12 meses', 365]];
+function fpHTML(tit, compacto) {
+  const per = compacto ? '1M' : (S.fpPer || '3M'), dias = FP_PER.find(x => x[0] === per)[2];
+  const ts = tit === 'casal' ? idsDe('casal') : [tit];
+  const sers = ts.map(t => ({t, m: fpSerie(t, dias), cm: Number((C().caixaMinimo || {})[t]?.valor) || 0})).filter(x => x.m.size);
+  if (!sers.length) return '';
+  const keys = [...new Set(sers.flatMap(x => [...x.m.keys()]))].sort(), hi = keys.indexOf(HOJE);
+  const labels = keys.map(d => dm(d)), W = chartW();
+  const cores = ['var(--ch1)', 'var(--ch2)', 'var(--warn)'];
+  const series = sers.map((x, i) => ({name: titNome(x.t), color: cores[i % 3], vals: keys.map(k => x.m.get(k) ?? null)}));
+  // leitura: menor saldo, dias abaixo de zero e do caixa mínimo
+  const ach = sers.map(x => { const fut = [...x.m].filter(([d]) => d >= HOJE); if (!fut.length) return null; const mn = fut.reduce((a, b) => b[1] < a[1] ? b : a);
+    const neg = fut.find(([, v]) => v < -0.004), abx = x.cm ? fut.filter(([, v]) => v < x.cm - 0.004) : [];
+    return {t: x.t, mn, neg, abx, cm: x.cm}; }).filter(Boolean);
+  const nm = a => sers.length > 1 ? esc(titNome(a.t)) + ': ' : '';
+  const frases = ach.map(a => a.neg ? `<li class="neg">${nm(a)}fica negativa a partir de ${dm(a.neg[0])}; menor saldo ${fmt(a.mn[1])} em ${dm(a.mn[0])}.</li>`
+    : a.abx.length ? `<li class="warn">${nm(a)}fica abaixo do caixa mínimo (${fmt(a.cm)}) em ${a.abx.length} ${a.abx.length > 1 ? 'dias' : 'dia'} do período, a partir de ${dm(a.abx[0][0])}; menor saldo ${fmt(a.mn[1])} em ${dm(a.mn[0])}.</li>`
+    : `<li class="pos">${nm(a)}sem aperto; menor saldo ${fmt(a.mn[1])} em ${dm(a.mn[0])}.</li>`).join('');
+  const pior = ach.reduce((a, b) => (b.mn[1] < a.mn[1] ? b : a), ach[0]);
+  const ref = sers.length === 1 && sers[0].cm ? {refY: sers[0].cm, refLabel: 'caixa mínimo ' + fmtK(sers[0].cm), refColor: 'var(--warn)'} : {};
+  const chart = lineChart({labels, series, hoje: hi > 0 ? hi : null, W, H: compacto ? 170 : 230, ...ref});
+  const legenda = series.length > 1 ? `<div class="legend">${series.map(x => `<span><i style="background:${x.color}"></i>${esc(x.name)}</span>`).join('')}</div>` : '';
+  const btn = pior ? `<button class="btn ghost sm" data-act="fpDia" data-d="${pior.mn[0]}">Ver o dia ${dm(pior.mn[0])}</button>` : '';
+  if (compacto) return `<section class="in-sec"><div class="in-sec-h"><h2>Próximos 30 dias</h2>${btn}</div><div class="in-chart fp"><ul class="fp-l">${frases}</ul>${legenda}${chart}</div></section>`;
+  return `<section class="db-card"><div class="db-h"><h2>Fluxo projetado</h2><div class="seg sm" role="group" aria-label="Período">${FP_PER.map(([k, n]) => `<button data-act="fpPer" data-v="${k}" aria-pressed="${per === k}">${k}</button>`).join('')}</div></div>
+    <ul class="fp-l">${frases}</ul>${legenda}<div class="fp-ch">${chart}</div>
+    <div class="db-foot"><span class="muted">Saldo na conta ao fim de cada dia. Linha cheia: realizado · tracejada: previsto.</span>${btn}</div></section>`;
+}
+// gastos que importam: categorias escolhidas, teto e ritmo do mês
+const GI_DEF = ['mercado-np', 'lanches', 'transporte-pessoal', 'impulsos', 'vestuario', 'compras-diversas'];
+function giLista() { const g = C().gastosImportam; return (Array.isArray(g) && g.length ? g : GI_DEF.map(cat => ({cat, teto: null}))).filter(x => x.cat === 'impulsos' || catById(x.cat)).slice(0, 6); }
+function giGasto(ym, ids, cat) { const E = engine(); return round2([...(E.byMonth.get(ymAdd(ym, -1)) || []), ...(E.byMonth.get(ym) || []), ...(E.byMonth.get(ymAdd(ym, 1)) || [])].filter(i => ids.includes(i.titular) && i.status === 'realizado' && i.tipo === 'saida' && (cat === 'impulsos' ? isImp(i) : i.categoria === cat && !i.impulso) && (i.data || i.competencia + '-01').startsWith(ym)).reduce((a, i) => a + (Number(i.valor) || 0), 0)); }
+function giTeto(ym, ids, x) {
+  if (x.teto > 0) return {v: Number(x.teto), auto: false};
+  if (x.cat === 'impulsos') { const t = round2(ids.reduce((a, t) => a + tetoImp(ym, t), 0)); if (t) return {v: t, auto: false, imp: true}; }
+  const med = [1, 2, 3].map(k => giGasto(ymAdd(ym, -k), ids, x.cat)).reduce((a, b) => a + b, 0) / 3;
+  return {v: med > 0 ? Math.ceil(med / 10) * 10 : 0, auto: true};
+}
+function giHTML(ym, tit) {
+  if (tit === pjId()) return '';
+  const ids = idsDe(tit), L = giLista(), cur = ym === HOJE_YM;
+  const dIM = new Date(Number(ym.slice(0, 4)), Number(ym.slice(5)), 0).getDate(), frac = cur ? Number(HOJE.slice(8)) / dIM : ym < HOJE_YM ? 1 : 0;
+  const rows = L.map(x => { const g = giGasto(ym, ids, x.cat), T = giTeto(ym, ids, x), pct = T.v ? g / T.v : 0;
+    const k = !T.v ? 'muted' : pct > 1 ? 'neg' : pct > frac + 0.1 ? 'warn' : 'pos';
+    const st = !T.v ? 'sem teto' : pct > 1 ? `estourou ${fmt(g - T.v)}` : pct > frac + 0.1 ? 'acima do ritmo' : 'no ritmo';
+    return `<div class="gi"><div class="gi-h"><b>${esc(x.cat === 'impulsos' ? 'Impulsos e passeios' : catNome(x.cat).replace(/\s*\(.*\)\s*$/, ''))}</b><span class="num"><b>${fmt(g)}</b><span class="muted"> de ${fmt(T.v)}</span></span></div>
+      <div class="lim-meter gi-m">${cur ? `<i class="gi-hoje" style="left:${(frac * 100).toFixed(1)}%"></i>` : ''}<b style="width:${Math.min(100, pct * 100).toFixed(1)}%;background:var(--${k === 'muted' ? 'muted' : k})"></b></div>
+      <small><span class="${k}">${st}</span>${T.v ? ` · ${Math.round(pct * 100)}% do teto${cur ? ` com ${Math.round(frac * 100)}% do mês` : ''}` : ''}${T.auto ? ' · teto = média de 3 meses' : T.imp ? ' · teto de impulsos' : ''}</small></div>`; }).join('');
+  const cats = C().categorias.filter(c => grpById(c.grupo)?.tipo === 'saida' && !c.oculta && !isFora(c.id));
+  const ed = S.giEdit ? `<div class="gi-ed">${Array.from({length: 6}, (_, i) => { const x = L[i] || {cat: '', teto: null}; return `<div class="gi-er"><select class="input" data-gi-cat="${i}"><option value="">—</option>${cats.map(c => `<option value="${c.id}" ${c.id === x.cat ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select><input class="input" data-gi-teto="${i}" inputmode="decimal" placeholder="automático" value="${x.teto ? String(x.teto).replace('.', ',') : ''}" aria-label="Teto mensal"></div>`; }).join('')}
+    <p class="muted" style="font-size:12.5px;margin:0">Teto em branco: usa a média dos 3 meses anteriores (ou o teto de impulsos já configurado).</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm" data-act="giEdit">Cancelar</button><button class="btn primary sm" data-act="giSalvar">Salvar</button></div></div>` : '';
+  return `<section class="db-card"><div class="db-h"><h2>Gastos que importam</h2>${S.readOnly ? '' : `<button class="btn ghost sm" data-act="giEdit">${S.giEdit ? 'Fechar' : 'Ajustar'}</button>`}</div>
+    <p class="db-sub">Gasto pela data da compra (inclui cartão). A marca vertical é o ponto do mês em que estamos.</p>${ed}<div class="gi-l">${rows}</div></section>`;
+}
+function kpisHTML(ym, tit) {
+  const P = ponte(ym, tit); if (!P) return ''; const r = resumoMes(ym, tit), cm = tit === 'casal' ? idsDe('casal').reduce((a, t) => a + (Number((C().caixaMinimo || {})[t]?.valor) || 0), 0) : Number((C().caixaMinimo || {})[tit]?.valor) || 0;
+  const mes = MESES[Number(ym.slice(5)) - 1], N = tit === pjId() ? null : notaSaude(tit);
+  const k = (lbl, v, cls, sub, act = '') => `<div class="db-kpi" ${act}><span class="eyebrow">${lbl}</span><b class="num ${cls}">${v}</b><small>${sub}</small></div>`;
+  const fimCls = P.fim < -0.004 ? 'neg' : cm && P.fim < cm - 0.004 ? 'warn' : '';
+  return `<div class="db-kpis">
+    ${P.cur ? k('Saldo hoje', fmt(P.hoje), P.hoje < -0.004 ? 'neg' : '', `${HOJE.split('-').reverse().slice(0, 2).join('/')} · na conta`) : k(`Saldo inicial`, fmt(P.ini), P.ini < -0.004 ? 'neg' : '', `fechamento do mês anterior`)}
+    ${k(`Fim de ${mes}`, fmt(P.fim), fimCls, cm ? (P.fim < cm - 0.004 ? `${fmt(cm - P.fim)} abaixo do caixa mínimo` : `caixa mínimo ${fmt(cm)}`) : 'se tudo sair como previsto')}
+    ${k('Resultado do mês', fmtS(r.res), r.res < -0.004 ? 'neg' : 'pos', 'entradas − saídas')}
+    ${N ? `<button class="db-kpi" data-act="scrollNota"><span class="eyebrow">Nota de saúde</span><b class="num ${N.faixa.k}">${N.nota}</b><small>${N.faixa.t} · de 100</small></button>` : k('Investido', fmt(cxsDe(tit).reduce((a, x) => a + x.s.hoje, 0)), '', 'caixinhas hoje')}
+  </div>`;
+}
+function vConquistas() {
+  if (S.tit === pjId() || !S.cxs.size) return `<div class="empty"><p>As conquistas valem para Nycolas, Grazi e Casal.</p></div>`;
+  return `<div class="stack"><p class="muted" style="margin:0">Nível, desafios do mês e conquistas. Saíram do Dashboard para ele ficar só com os indicadores.</p>${jornadaHTML(S.tit)}</div>`;
 }
 
 /* ============ painel ============ */
@@ -1854,10 +2030,14 @@ function vPainel() {
   const fixos = itens.filter(i => i.tipo === 'saida' && i.status !== 'pulado' && ['assinatura', 'recorrente'].includes(i.natureza)).sort((a, b) => b.valor - a.valor);
   const fixosT = fixos.reduce((s, i) => s + i.valor, 0);
   const trf = itens.filter(i => catTipo(i.categoria) === 'transferencia' && i.status !== 'pulado');
-  return `<div class="stack">
+  const cxs = cxsDe(S.tit), ids = idsDe(S.tit);
+  return `<div class="stack db">
+    ${kpisHTML(S.mes, S.tit)}
+    ${!isPJ && S.cxs.size ? `<button class="db-conq" data-act="nav" data-v="conquistas">${(() => { const J = jornada(S.tit); return `<span class="jn-mini">${J.nivel}</span><span><b>Nível ${J.nivel} · ${esc(J.nome)}</b><small>${J.des.filter(d => d.ok).length} de ${J.des.length} desafios do mês em dia · conquistas e jornada</small></span><span class="chev">›</span>`; })()}</button>` : ''}
+    <div class="db-grid">${notaHTML(S.tit)}${fpHTML(S.tit)}</div>
+    <div class="db-grid">${giHTML(S.mes, S.tit)}${S.tit !== pjId() ? saudeHTML(S.tit, ids, cxs, E) : ''}</div>
     ${placarHTML(r)}
     ${alerta ? `<div class="alert">Atenção: o saldo projetado fica negativo em ${ymLong(alerta.m)} (${fmt(alerta.v)}). Abra o Fluxo mensal para ver o que pesa.</div>` : `<div class="alert ok">Saldo projetado positivo nos próximos 12 meses.</div>`}
-    ${!isPJ && S.cxs.size ? jornadaHTML(S.tit) : ''}
     ${!isPJ ? (tetoHTML(S.mes, S.tit) || ((imp || impMed) ? `<div class="alert ${imp > impMed ? '' : 'ok'}">Impulsos e besteiras: ${fmt(imp)} em ${MESES[Number(S.mes.slice(5)) - 1]} · média dos 6 meses anteriores ${fmt(impMed)}. ${imp > impMed ? 'Acima da média.' : 'Dentro da média.'}</div>` : '')) : ''}
     <div class="grid2">
       <section class="panel chart">
@@ -2061,7 +2241,7 @@ function diarioSVG(F, cm, sel) {
   let g = '';
   if (lo < 0) g += `<rect x="${L}" y="${y(0)}" width="${W - L - R}" height="${y(lo) - y(0)}" fill="var(--neg)" opacity=".07"/>`;
   for (let v = lo; v <= hi + 1e-6; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${Math.abs(v) < 1e-6 ? 'stroke="var(--muted)" stroke-width="1.4"' : ''}/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${fmtK(v)}</text>`;
-  if (cm) g += `<line x1="${L}" x2="${W - R}" y1="${y(cm)}" y2="${y(cm)}" stroke="#b7791f" stroke-dasharray="4 4" opacity=".8"/><text x="${L + 4}" y="${y(cm) - 4}" style="fill:#b7791f">caixa mínimo</text>`;
+  if (cm) g += `<line x1="${L}" x2="${W - R}" y1="${y(cm)}" y2="${y(cm)}" stroke="var(--warn)" stroke-dasharray="4 4" opacity=".8"/><text x="${L + 4}" y="${y(cm) - 4}" style="fill:var(--warn)">caixa mínimo</text>`;
   F.dias.forEach((d, i) => {
     const cx = x(i);
     if (d.d === sel) g += `<rect x="${cx}" y="${T}" width="${cw}" height="${H - T - B}" fill="var(--accent-soft)"/>`;
@@ -3598,6 +3778,12 @@ document.addEventListener('click', async e => {
     case 'mais': S.maisOpen = !S.maisOpen; renderTabbar(); break;
     case 'pgSync': pgSync(); break;
     case 'impOk': { const ok = await impAplica(el.dataset.id); if (ok) toast('Conferido.'); break; }
+    case 'fpPer': S.fpPer = el.dataset.v; render(); break;
+    case 'fpDia': S.diaSel = el.dataset.d; S.mes = el.dataset.d.slice(0, 7); S.view = 'fluxo'; render(); window.scrollTo(0, 0); break;
+    case 'scrollNota': document.querySelector('.db-nota')?.scrollIntoView({behavior: 'smooth', block: 'start'}); break;
+    case 'giEdit': S.giEdit = !S.giEdit; render(); break;
+    case 'giSalvar': { const L = []; for (let i = 0; i < 6; i++) { const c = document.querySelector(`[data-gi-cat="${i}"]`)?.value, t = parseValor(document.querySelector(`[data-gi-teto="${i}"]`)?.value || ''); if (c && !L.some(x => x.cat === c)) L.push({cat: c, teto: isNaN(t) || t <= 0 ? null : round2(t)}); } S.giEdit = false; await saveConfig({gastosImportam: L}); toast('Gastos que importam atualizados.'); break; }
+    case 'tema': setTema(temaAtual() === 'dark' ? 'light' : 'dark'); render(); break;
     case 'impRev': openImpRev(el.dataset.id); break;
     case 'impRevSug': if (S.impForm) { S.impForm.categoria = el.dataset.c; drawImpRev(); } break;
     case 'criaCat': await criaCatInline(el.dataset.ctx); break;
