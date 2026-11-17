@@ -1234,6 +1234,21 @@ function renderNoDb() {
 
 
 /* ============ conferir banco (Pluggy / Open Finance) ============ */
+// quem está do outro lado de um Pix/transferência (texto do banco)
+function contraparte(imp) {
+  const raw = String(imp.descricao || ''), pipe = raw.split('|');
+  if (!/pix|transfer|ted\b|doc\b/i.test(norm(pipe[0]))) return null;
+  let n = pipe.length > 1 ? pipe.slice(1).join(' ') : raw.replace(/^.*?(pix|transfer[eê]ncia)\s*(enviad[oa]|recebid[oa]|realizad[oa])?\s*(pelo pix)?\s*(para|de)?\s*/i, '');
+  n = norm(n).replace(/^\d[\d.\-/ ]*\s+/, '').trim(); return n.length >= 3 ? n : null;
+}
+// titular do app pelo nome que aparece no banco (nome completo, apelido ou nomes cadastrados em nomesBanco)
+function titPorNome(n) {
+  if (!n) return null; const w = n.split(' ').filter(Boolean);
+  for (const t of C().titulares) { const nomes = [t.nomeCompleto, ...(t.nomesBanco || [])].filter(Boolean).map(norm);
+    if (nomes.some(x => n === x || n.startsWith(x) || x.startsWith(n))) return t.id;
+    const a = norm(t.nome); if (!nomes.length && a.length >= 4 && w[0] && (w[0] === a || (w[0].startsWith(a) && w.length >= 2))) return t.id; }
+  return null;
+}
 function impSugestao(imp, usados) {
   const d = norm(imp.descricao + ' ' + (imp.descricaoBanco || ''));
   if (!imp.titular || !imp.meio) return {acao: 'semConta'};
@@ -1246,7 +1261,7 @@ function impSugestao(imp, usados) {
   if (!imp.cartao && imp.tipo === 'saida') { const pg = [...S.pagamentos.entries()].find(([pid, p]) => !usados.has('pg:' + pid) && (cardById(p.cartao)?.titular || imp.titular) === imp.titular && cardById(p.cartao)?.tipo !== 'crediario' && Math.abs(Number(p.valor) - imp.valor) < 0.011 && Math.abs(diasEntre(p.data, imp.data)) <= 4);
     if (pg) return {acao: 'vincularPg', pid: pg[0], txt: `Pagamento da fatura ${esc(cardById(pg[1].cartao)?.nome || pg[1].cartao)} (${dm(pg[1].data)})`}; }
   // caixinha do Mercado Pago ("Dinheiro reservado X" / "Dinheiro retirado X"): acha a caixinha pelo nome
-  const mCx = !imp.cartao && /dinheiro (reservado|retirado)\s+(.+)/.exec(d);
+  const mCx = !imp.cartao && /dinheiro (reservado|retirado)\s+(.+)/.exec(norm(imp.descricao.split('|')[0]));
   const cxBanco = mCx ? (() => { const ws = mCx[2].split(' ').filter(w => w.length > 2); return [...S.cxs.entries()].find(([, c]) => c.titular === imp.titular && c.ativa !== false && ws.length && ws.every(w => norm(c.nome + ' ' + (c.banco || '')).includes(w)))?.[0] || null; })() : null;
   // pagamento de fatura por Pix/boleto (cartão de terceiro ou crédito) que ainda não tem pagamento registrado
   if (!imp.cartao && imp.tipo === 'saida' && !mCx) {
@@ -1274,6 +1289,12 @@ function impSugestao(imp, usados) {
   }
   cand.sort((a, b) => a.sc - b.sc);
   if (cand.length) return {acao: cand[0].tipo, it: cand[0].it};
+  // Pix entre contas da mesma pessoa, ou entre vocês (cada lado em uma conta conectada)
+  if (!imp.cartao && !mCx) { const tp = titPorNome(contraparte(imp));
+    if (tp && tp === imp.titular) return {acao: 'ignorar', motivo: 'Transferência entre contas da mesma pessoa: o saldo total não muda.'};
+    if (tp && tp !== imp.titular && tp !== pjId() && imp.titular !== pjId() && C().titulares.some(t => t.id === tp)) { // PJ ↔ pessoa é distribuição/pró-labore, não transferência
+      const par = [...S.imps.entries()].find(([, o]) => o !== imp && !o.cartao && o.titular === tp && o.tipo !== imp.tipo && Math.abs(o.valor - imp.valor) < 0.011 && Math.abs(diasEntre(o.data, imp.data)) <= 2 && o.estado === 'novo' && !usados.has('imp:' + o.pluggyId) && titPorNome(contraparte(o)) === imp.titular);
+      return {acao: 'transfPessoa', de: imp.tipo === 'saida' ? imp.titular : tp, para: imp.tipo === 'saida' ? tp : imp.titular, parId: par?.[0] || null, nat: 'transferencia'}; } }
   if (cxBanco) { const cx = S.cxs.get(cxBanco), ap = mCx[1] === 'reservado'; return {acao: 'lancar', cat: ap ? 'caixinha-aporte' : 'caixinha-resgate', caixinha: cxBanco, forn: cx.nome, desc: `${ap ? 'Guardar na caixinha' : 'Tirar da caixinha'} ${cx.nome}`, nat: 'transferencia'}; }
   // compra estornada (cobrança + estorno se anulam) e caixinha do Nubank sem caixinha no app
   const ehEst = o => /estorno/.test(norm(o.descricao));
@@ -1290,7 +1311,7 @@ function impSugestao(imp, usados) {
 function impLista() {
   const usados = new Set(); const out = [];
   const pend = [...S.imps.entries()].filter(([, i]) => i.estado === 'novo').sort((a, b) => (b[1].data + b[1].hora).localeCompare(a[1].data + a[1].hora));
-  for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); if (sg.acao === 'pagarFatura') { usados.add('fat:' + sg.card.id + imp.data.slice(0, 7)); usados.add('fat:' + sg.card.id + ymAdd(imp.data.slice(0, 7), 1)); if (sg.extra) usados.add(sg.extra.id); } out.push({id, imp, sg}); }
+  for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); if (sg.acao === 'transfPessoa') { if (sg.parId) usados.add('imp:' + S.imps.get(sg.parId)?.pluggyId); } if (sg.acao === 'pagarFatura') { usados.add('fat:' + sg.card.id + imp.data.slice(0, 7)); usados.add('fat:' + sg.card.id + ymAdd(imp.data.slice(0, 7), 1)); if (sg.extra) usados.add(sg.extra.id); } out.push({id, imp, sg}); }
   // segunda passada: o que sobrou para "lançar" pode ser a soma de lançamentos já feitos (ex.: Pix no crédito = gasto + encargos; dois Pix = moto + transferência)
   const E = engine(), grupos = new Map();
   for (const x of out) if (x.sg.acao === 'lancar') { const k = [x.imp.titular, x.imp.meio, x.imp.tipo, x.imp.data, norm(x.imp.descricao.split('|').pop())].join('|'); if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); }
@@ -1328,6 +1349,16 @@ async function impAplica(id, sgOver) {
     if (it.virtual) { lid = 'rx-' + uid(); ok = await put('lancamentos', lid, {...limpaVirtual(it), ...extra, pluggyId: imp.pluggyId}); }
     else { const old = S.lanc.get(it.id); if (!old) return false; ok = await put('lancamentos', it.id, {...old, ...extra, status: 'realizado', pluggyId: imp.pluggyId}); }
     return ok && marca('vinculado', {lancId: lid});
+  }
+  if (sg.acao === 'transfPessoa') {
+    const par = sg.parId ? S.imps.get(sg.parId) : null, iOut = imp.tipo === 'saida' ? imp : par, iIn = imp.tipo === 'entrada' ? imp : par;
+    const outId = 'tr-' + uid(), inId = outId + '-par', common = {competencia: imp.data.slice(0, 7), data: imp.data, valor: round2(imp.valor), status: 'realizado', natureza: 'transferencia', transferencia: true, origem: 'pluggy'};
+    const ok = await putMany('lancamentos', [
+      [outId, {...common, tipo: 'saida', titular: sg.de, descricao: `Transferência para ${titNome(sg.para)}`, fornecedor: titNome(sg.para), categoria: catTransf('out').id, meio: 'conta', par: inId, ...(iOut ? {pluggyId: iOut.pluggyId} : {})}],
+      [inId, {...common, tipo: 'entrada', titular: sg.para, descricao: `Transferência de ${titNome(sg.de)}`, fornecedor: titNome(sg.de), categoria: catTransf('in').id, meio: 'conta', par: outId, ...(iIn ? {pluggyId: iIn.pluggyId} : {})}]]);
+    if (!ok) return false;
+    if (par) await put('importados', sg.parId, {...par, estado: 'lancado', conferidoEm: new Date().toISOString(), lancId: imp.tipo === 'saida' ? inId : outId});
+    return marca('lancado', {lancId: imp.tipo === 'saida' ? outId : inId});
   }
   if (sg.acao === 'lancar') {
     const card = imp.cartao ? cardById(imp.meio) : null, lid = 'pg-' + imp.pluggyId;
@@ -1499,11 +1530,12 @@ function vBanco() {
     if (sg.acao === 'pagarFatura') return `Registra o <b>${sg.txt}</b>: as compras do cartão já estão lançadas, este Pix só quita a fatura.`;
     if (sg.acao === 'vincularGrupo') return `Já está no app, somando: <b>${esc(sg.txt)}</b>.`;
     if (sg.acao === 'vincular') return `Já está no app: <b>${esc(sg.it.descricao)}</b> (${dm(sg.it.data)}).`;
+    if (sg.acao === 'transfPessoa') return `Transferência de <b>${esc(titNome(sg.de))}</b> para <b>${esc(titNome(sg.para))}</b>: registra os dois lados, sem contar como gasto nem receita${sg.parId ? ' (o outro lado, da outra conta, também é conferido)' : ''}.`;
     if (sg.acao === 'quitar') return `Quita o previsto <b>${esc(sg.it.descricao)}</b> (${fmt(sg.it.valor)}${Math.abs(sg.it.valor - imp.valor) > 0.004 ? ` → ${fmt(imp.valor)}` : ''}).`;
     if (sg.caixinha) return `${sg.cat === 'caixinha-aporte' ? 'Guardar na' : 'Tirar da'} caixinha <b>${esc(S.cxs.get(sg.caixinha)?.nome || '')}</b> (sai e volta para a conta; não é gasto).`;
     return `Lançar como <b>${esc(catNome(sg.cat))}</b>${sg.forn ? ` · ${esc(sg.forn)}` : ''}${imp.cartao ? ` · fatura de ${ymLong(competenciaCartao(cardById(imp.meio) || {}, imp.data))}` : ''}.`;
   };
-  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? (sg.caixinha ? 'Lançar na caixinha' : 'Lançar') : sg.acao === 'quitar' ? 'Quitar' : sg.acao === 'pagarFatura' ? 'Registrar pagamento' : 'Confirmar';
+  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? (sg.caixinha ? 'Lançar na caixinha' : 'Lançar') : sg.acao === 'quitar' ? 'Quitar' : sg.acao === 'pagarFatura' ? 'Registrar pagamento' : sg.acao === 'transfPessoa' ? 'Registrar transferência' : 'Confirmar';
   const aplicaveis = L.filter(x => x.sg.acao !== 'semConta' && x.sg.acao !== 'lancar');
   const semConta = L.filter(x => x.sg.acao === 'semConta');
   const vis = L.filter(x => x.sg.acao !== 'semConta');
