@@ -322,6 +322,7 @@ table.mini{font-size:13px}table.mini td,table.mini th{padding:5px 8px}
 .switch{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px}
 .switch input{width:16px;height:16px;accent-color:var(--accent)}
 
+.nova-cat{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}.nova-cat .input{flex:1;min-width:140px}
 .sugcat{margin-top:6px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .toast-undo{margin-left:10px;background:none;border:0;color:var(--accent);font-weight:600;cursor:pointer;padding:0;font:inherit}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:40;font-weight:500;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
@@ -1277,7 +1278,7 @@ async function impAplica(id, sgOver) {
     const card = imp.cartao ? cardById(imp.meio) : null, lid = 'pg-' + imp.pluggyId;
     const descr = (imp.descricao.split('|').pop() || imp.descricao).trim();
     const ok = await put('lancamentos', lid, {titular: imp.titular, tipo: imp.tipo, valor: imp.valor, data: imp.data, competencia: card ? competenciaCartao(card, imp.data) : imp.data.slice(0, 7),
-      meio: imp.meio, categoria: sg.cat, fornecedor: sg.forn || descr, descricao: sg.desc || descr, natureza: isFora(sg.cat) ? 'transferencia' : sg.nat, status: 'realizado', origem: 'pluggy', pluggyId: imp.pluggyId, ...(sg.caixinha ? {caixinha: sg.caixinha} : {}),
+      meio: imp.meio, categoria: sg.cat, fornecedor: sg.forn || descr, descricao: sg.desc || descr, natureza: isFora(sg.cat) ? 'transferencia' : sg.nat, status: 'realizado', origem: 'pluggy', pluggyId: imp.pluggyId, ...(sg.caixinha ? {caixinha: sg.caixinha} : {}), ...(sg.impulso ? {impulso: true} : {}),
       ...(imp.parcela ? {parcela: imp.parcela, parcelas: imp.parcelas} : {})});
     return ok && marca('lancado', {lancId: lid});
   }
@@ -1479,7 +1480,7 @@ function vBanco() {
           <span class="in-tx" style="gap:4px"><span style="display:flex;justify-content:space-between;gap:10px"><b style="white-space:normal">${esc(imp.descricao.split('|').pop().trim() || imp.descricao)}</b><span class="num ${ent ? 'pos' : ''}" style="font-weight:600;white-space:nowrap">${ent ? '+' : '−'}${fmt(imp.valor)}</span></span>
             <small>${esc(imp.conta)}${imp.hora ? ' · ' + imp.hora : ''}${imp.situacao === 'PENDING' ? ' · pendente no banco' : ''}${imp.parcelas > 1 ? ` · parcela ${imp.parcela}/${imp.parcelas}` : ''}</small>
             <small style="color:var(--ink);white-space:normal">${sugTxt(x)}</small>
-            ${S.readOnly ? '' : `<span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><button class="btn sm ${x.sg.acao === 'lancar' ? '' : 'primary'}" data-act="impOk" data-id="${esc(id)}">${btn(x)}</button>${x.sg.acao !== 'ignorar' ? `<button class="btn ghost sm" data-act="impIgn" data-id="${esc(id)}">Ignorar</button>` : `<button class="btn ghost sm" data-act="impLancar" data-id="${esc(id)}">Lançar mesmo assim</button>`}</span>`}</span></div>`; }).join('') : '<div class="in-empty">Tudo conferido. Nada pendente do banco.</div>'}</div>
+            ${S.readOnly ? '' : `<span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><button class="btn sm ${x.sg.acao === 'lancar' ? '' : 'primary'}" data-act="impOk" data-id="${esc(id)}">${btn(x)}</button>${x.sg.acao !== 'semConta' ? `<button class="btn ghost sm" data-act="impRev" data-id="${esc(id)}">${x.sg.acao === 'lancar' ? 'Editar e lançar' : x.sg.acao === 'ignorar' ? 'Lançar mesmo assim' : 'Lançar como novo'}</button>` : ''}${x.sg.acao !== 'ignorar' ? `<button class="btn ghost sm" data-act="impIgn" data-id="${esc(id)}">Ignorar</button>` : ''}</span>`}</span></div>`; }).join('') : '<div class="in-empty">Tudo conferido. Nada pendente do banco.</div>'}</div>
       ${semConta.length ? `<p class="muted" style="font-size:12px;margin:0 2px">${semConta.length} transações de contas sem vínculo ficaram de fora.</p>` : ''}
       <p class="muted" style="font-size:12px;margin:0 2px">"Lançar" cria o lançamento já como realizado. "Confirmar" e "Quitar" ligam ao que já existe no app, sem duplicar.</p></section>
   </div>`;
@@ -3320,7 +3321,7 @@ function drawForm(novo) {
       <div class="fields2">
         <div class="field"><label for="fl-forn">Fornecedor</label><input class="input" id="fl-forn" list="dl-forn" value="${esc(F.fornecedor)}" data-f="fornecedor" placeholder="A quem pagou: Angeloni, Uber…"><datalist id="dl-forn">${forns.map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
         <div class="field"><label for="fl-nat">Natureza</label><select class="input" id="fl-nat" data-f="natureza">${NATUREZAS.filter(n => !['transferencia', 'ajuste'].includes(n[0])).map(([id, n]) => `<option value="${id}" ${id === natDef ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
-      <div class="field"><label for="fl-cat">Categoria</label><select class="input" id="fl-cat" data-f="categoria" required><option value="">Escolha…</option>${catOptions(F.tipo, F.categoria)}</select><div id="fl-sugcat">${sugCatHTML()}</div></div>
+      <div class="field"><label for="fl-cat">Categoria</label><select class="input" id="fl-cat" data-f="categoria" required><option value="">Escolha…</option>${catOptions(F.tipo, F.categoria)}<option value="__nova">+ Nova categoria…</option></select>${F.novaCat ? novaCatHTML(F.tipo, 'form') : ''}<div id="fl-sugcat">${sugCatHTML()}</div></div>
       <div class="field"><label for="fl-tit">Titular</label><select class="input" id="fl-tit" data-f="titular">${c.titulares.map(t => `<option value="${t.id}" ${t.id === F.titular ? 'selected' : ''}>${esc(t.nome)}</option>`).join('')}</select></div>`}
     <div class="fields2">
       <div class="field"><label for="fl-data">Data</label><input class="input" type="date" id="fl-data" value="${F.data}" data-f="data" required></div>
@@ -3338,6 +3339,49 @@ function drawForm(novo) {
     <div id="confirm-area"></div>
   </form></div>`;
   const fv = $('#fl-valor'); if (novo && fv) setTimeout(() => fv.focus(), 30);
+}
+function novaCatHTML(tipo, ctx) {
+  const gs = C().grupos.filter(g => g.tipo === tipo), F = ctx === 'imp' ? S.impForm : S.form;
+  const gDef = catById(F?.catAntes)?.grupo || (gs.find(g => g.id === (tipo === 'entrada' ? 'outras-entradas' : 'compras')) || gs[0])?.id;
+  return `<div class="nova-cat"><input class="input" id="nc2-nome" placeholder="Nome da nova categoria" aria-label="Nome da nova categoria"><select class="input" id="nc2-grp" aria-label="Grupo">${gs.map(g => `<option value="${g.id}" ${g.id === gDef ? 'selected' : ''}>${esc(g.nome)}</option>`).join('')}</select><button type="button" class="btn sm primary" data-act="criaCat" data-ctx="${ctx}">Criar</button><button type="button" class="btn ghost sm" data-act="criaCatX" data-ctx="${ctx}">Cancelar</button></div>`;
+}
+async function criaCatInline(ctx) {
+  const n = ($('#nc2-nome')?.value || '').trim(), g = $('#nc2-grp')?.value; if (!n) return toast('Dê um nome à categoria.'); if (!g) return toast('Escolha o grupo.');
+  const ja = C().categorias.find(c => norm(c.nome) === norm(n) && c.grupo === g);
+  const id = ja ? ja.id : norm(n).replace(/ /g, '-') + '-' + uid().slice(-3);
+  const F = ctx === 'imp' ? S.impForm : S.form; if (!F) return;
+  if (!ja) { const snap = JSON.stringify({...F}); await saveConfig({categorias: [...C().categorias, {id, nome: n, grupo: g}]}); Object.assign(F, JSON.parse(snap)); }
+  if (ctx === 'imp') { S.impForm = F; F.categoria = id; F.novaCat = false; drawImpRev(); } else { S.form = F; F.categoria = id; F.novaCat = false; drawForm(!F.id); }
+  toast(ja ? `Categoria ${n} já existia e foi escolhida.` : `Categoria ${n} criada.`);
+}
+/* ============ lançar do banco com revisão ============ */
+function openImpRev(id) {
+  const imp = S.imps.get(id); if (!imp) return; const x = impLista().find(y => y.id === id); const sg = x?.sg || {};
+  const descr = (imp.descricao.split('|').pop() || imp.descricao).trim();
+  const cat = sg.acao === 'lancar' ? sg.cat : (catDoFornecedor(sg.forn || descr, imp.tipo) || '');
+  S.impForm = {id, tipo: imp.tipo, descricao: sg.acao === 'lancar' && sg.desc ? sg.desc : descr, fornecedor: sg.acao === 'lancar' && sg.forn ? sg.forn : descr, categoria: cat, natureza: sg.nat && sg.nat !== 'transferencia' ? sg.nat : 'avulso', impulso: false, caixinha: sg.acao === 'lancar' ? sg.caixinha || null : null, novaCat: false};
+  drawImpRev();
+}
+function drawImpRev() {
+  const F = S.impForm, imp = S.imps.get(F.id); if (!imp) return;
+  const forns = [...fornecedores().keys()].sort((a, b) => a.localeCompare(b));
+  $('#modal').innerHTML = `<div class="scrim" data-act="closeScrim"><form class="sheet" id="imp-form" autocomplete="off">
+    <div class="sheet-head"><h2>Lançar do banco</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
+    <div class="hint"><b>${imp.tipo === 'entrada' ? '+' : '−'}${fmt(imp.valor)}</b> em ${imp.data.split('-').reverse().join('/')} · ${esc(imp.conta || '')}<br><small>No banco: ${esc(imp.descricao)}</small><br><small>Valor, data e conta vêm do banco e não mudam aqui.</small></div>
+    <div class="field"><label for="ir-desc">Descrição</label><input class="input" id="ir-desc" data-fi="descricao" value="${esc(F.descricao)}" required></div>
+    <div class="field"><label for="ir-forn">Fornecedor</label><input class="input" id="ir-forn" list="dl-ir-forn" data-fi="fornecedor" value="${esc(F.fornecedor)}"><datalist id="dl-ir-forn">${forns.map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
+    <div class="field"><label for="ir-cat">Categoria</label><select class="input" id="ir-cat" data-fi="categoria" required><option value="">Escolha…</option>${catOptions(F.tipo, F.categoria, true)}<option value="__nova">+ Nova categoria…</option></select>${F.novaCat ? novaCatHTML(F.tipo, 'imp') : ''}<div id="ir-sug">${impRevSugHTML()}</div></div>
+    ${isFora(F.categoria) ? '' : `<div class="field"><label for="ir-nat">Natureza</label><select class="input" id="ir-nat" data-fi="natureza">${NATUREZAS.filter(n => !['transferencia', 'ajuste'].includes(n[0])).map(([id, n]) => `<option value="${id}" ${id === F.natureza ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`}
+    ${F.tipo === 'saida' && F.categoria !== 'impulsos' && !isFora(F.categoria) ? `<label class="switch"><input type="checkbox" data-fi="impulso" ${F.impulso ? 'checked' : ''}>Foi impulso ou besteira? (conta no teto de impulsos)</label>` : ''}
+    <div class="sheet-foot"><span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" ${S.readOnly ? 'disabled' : ''}>Lançar</button></div>
+  </form></div>`;
+}
+function impRevSugHTML() { const F = S.impForm; if (!F) return ''; const s = catDoFornecedor(F.fornecedor.trim(), F.tipo); return s && s !== F.categoria ? `<div class="sugcat">${esc(F.fornecedor)} costuma ser <b>${esc(catNome(s))}</b> <button type="button" class="btn sm" data-act="impRevSug" data-c="${esc(s)}">Usar</button></div>` : ''; }
+async function submitImpRev() {
+  const F = S.impForm; if (!F) return;
+  if (!F.descricao.trim()) return toast('Escreva uma descrição.'); if (!F.categoria) return toast('Escolha uma categoria.');
+  const sg = {acao: 'lancar', cat: F.categoria, desc: F.descricao.trim(), forn: F.fornecedor.trim(), nat: isFora(F.categoria) ? 'transferencia' : F.natureza || 'avulso', ...(F.caixinha && ['caixinha-aporte', 'caixinha-resgate'].includes(F.categoria) ? {caixinha: F.caixinha} : {}), ...(F.impulso && F.tipo === 'saida' ? {impulso: true} : {})};
+  const id = F.id; closeModal(); const ok = await impAplica(id, sg); if (ok) toast(`Lançado em ${catNome(F.categoria)}.`);
 }
 async function submitLanc() {
   const F = S.form; const v = parseValor(F.valor);
@@ -3400,7 +3444,7 @@ async function submitLanc() {
   if (ok && Ti) { const g = round2(gAntes + nd.valor); return toast(`${g > Ti ? 'Estourou o teto de impulsos' : g > Ti * 0.8 ? 'Atenção: perto do teto' : 'Impulsos do mês'}: ${fmt(g)} de ${fmt(Ti)}.`, () => del('lancamentos', nid)); }
   if (ok) toast((status === 'previsto' ? 'Previsto salvo: ' : 'Salvo: ') + ondeCai(nd), () => del('lancamentos', nid));
 }
-function closeModal() { $('#modal').innerHTML = ''; S.form = null; S.recForm = null; S.divForm = null; S.cxForm = null; S.cxRend = null; }
+function closeModal() { $('#modal').innerHTML = ''; S.form = null; S.impForm = null; S.recForm = null; S.divForm = null; S.cxForm = null; S.cxRend = null; }
 
 /* ============ recorrência e dívida (formulários) ============ */
 function openRec(id) {
@@ -3554,6 +3598,10 @@ document.addEventListener('click', async e => {
     case 'mais': S.maisOpen = !S.maisOpen; renderTabbar(); break;
     case 'pgSync': pgSync(); break;
     case 'impOk': { const ok = await impAplica(el.dataset.id); if (ok) toast('Conferido.'); break; }
+    case 'impRev': openImpRev(el.dataset.id); break;
+    case 'impRevSug': if (S.impForm) { S.impForm.categoria = el.dataset.c; drawImpRev(); } break;
+    case 'criaCat': await criaCatInline(el.dataset.ctx); break;
+    case 'criaCatX': { const F = el.dataset.ctx === 'imp' ? S.impForm : S.form; if (F) { F.novaCat = false; el.dataset.ctx === 'imp' ? drawImpRev() : drawForm(!F.id); } break; }
     case 'impIgn': { const ok = await impAplica(el.dataset.id, {acao: 'ignorar', motivo: 'Ignorado manualmente'}); if (ok) toast('Ignorado.'); break; }
     case 'impLancar': { const imp = S.imps.get(el.dataset.id); if (!imp) break; const sg = impSugestao({...imp, descricao: imp.descricao + ' '}, new Set()); const ok = await impAplica(el.dataset.id, sg.acao === 'lancar' ? sg : {acao: 'lancar', cat: imp.tipo === 'saida' ? 'compras-diversas' : 'outros-nr', nat: 'avulso'}); if (ok) toast('Lançado.'); break; }
     case 'impSel': { S.impSel = S.impSel || new Set(); const id = el.dataset.id; S.impSel.has(id) ? S.impSel.delete(id) : S.impSel.add(id); render(); break; }
@@ -3692,8 +3740,15 @@ document.addEventListener('input', e => {
   if (e.target.dataset?.cpbusca) { S.cpBusca = e.target.value; clearTimeout(S._cpb); S._cpb = setTimeout(() => { render(); const b = $('#cp-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); return; }
   const t = e.target;
   if (t.id === 'cc-real') { const v = parseValor(t.value), d = $('#cc-dif'); if (d) d.textContent = isNaN(v) || S.concCalc == null ? '' : Math.abs(v - S.concCalc) < 0.01 ? 'Confere com o app.' : `Diferença: ${fmtS(v - S.concCalc)}`; return; }
+  if (t.dataset.fi && S.impForm) { const k = t.dataset.fi;
+    if (k === 'categoria' && t.value === '__nova') { S.impForm.catAntes = S.impForm.categoria; S.impForm.categoria = ''; S.impForm.novaCat = true; drawImpRev(); setTimeout(() => $('#nc2-nome')?.focus(), 30); return; }
+    S.impForm[k] = t.type === 'checkbox' ? t.checked : t.value;
+    if (k === 'categoria') { drawImpRev(); return; }
+    if (k === 'fornecedor') { const b = $('#ir-sug'); if (b) b.innerHTML = impRevSugHTML(); }
+    return; }
   if (t.dataset.f && S.form) {
-    const k = t.dataset.f; S.form[k] = t.type === 'checkbox' ? t.checked : t.value;
+    const k = t.dataset.f; if (k === 'categoria' && t.value === '__nova') { S.form.catAntes = S.form.categoria; S.form.categoria = ''; S.form.novaCat = true; drawForm(!S.form.id); setTimeout(() => $('#nc2-nome')?.focus(), 30); return; }
+    S.form[k] = t.type === 'checkbox' ? t.checked : t.value;
     if (k === 'descricao' && !S.form.id) { // autocompletar pelo histórico
       const hits = [...S.lanc.values()].filter(l => l.tipo === S.form.tipo && l.descricao === t.value && l.status !== 'pulado').sort((a, b) => (a.data || '').localeCompare(b.data || ''));
       const hit = hits[hits.length - 1];
@@ -3776,6 +3831,7 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', e => {
   e.preventDefault();
   if (e.target.id === 'lanc-form') submitLanc();
+  if (e.target.id === 'imp-form') submitImpRev();
   if (e.target.id === 'cx-form') submitCx();
   if (e.target.id === 'cxr-form') submitCxRend();
   else if (e.target.id === 'rec-form') submitRec();
