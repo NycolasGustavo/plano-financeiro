@@ -1276,6 +1276,11 @@ function impSugestao(imp, usados) {
           if (ex) return {acao: 'pagarFatura', card: f.card, F: (Number(f.card.vencimento) || 10) > (Number(f.card.fechamento) || 1) ? mm : ymAdd(mm, -1), valor: f.falta, falta: f.falta, extra: ex, txt: `Pagamento da fatura ${esc(f.card.nome)} de ${ymLong(mm)} (${fmt(f.falta)}) + ${esc(ex.descricao)} (${fmt(ex.valor)})`}; }
       } }
   }
+  if (!imp.cartao) { const ret = o => /dinheiro retirado|resgate/.test(norm(o.descricao.split('|')[0]));
+    const par = [...S.imps.entries()].find(([, o]) => o !== imp && !o.cartao && o.titular === imp.titular && o.estado === 'novo' && o.tipo !== imp.tipo && o.data === imp.data && Math.abs(o.valor - imp.valor) < 0.011 && (imp.tipo === 'saida' ? ret(o) : ret(imp)));
+    if (par) { const E1 = engine(), m1 = imp.data.slice(0, 7); for (const m of [ymAdd(m1, -1), m1, ymAdd(m1, 1)]) for (const it of (E1.byMonth.get(m) || []))
+      if (it.status === 'previsto' && it.meio === 'caixinha' && it.tipo === 'saida' && it.titular === imp.titular && !usados.has(it.id) && Math.abs((Number(it.valor) || 0) - imp.valor) < 0.011 && Math.abs(diasEntre(it.data || m + '-01', imp.data)) <= 30 && (!cxBanco || it.caixinha === cxBanco))
+        return {acao: 'quitarCx', it, parId: par[0]}; } }
   const E = engine(), m0 = imp.data.slice(0, 7), cand = [];
   for (const m of [ymAdd(m0, -1), m0, ymAdd(m0, 1)]) for (const it of (E.byMonth.get(m) || [])) {
     if (cxBanco && it.caixinha !== cxBanco) continue;
@@ -1311,14 +1316,14 @@ function impSugestao(imp, usados) {
 function impLista() {
   const usados = new Set(); const out = [];
   const pend = [...S.imps.entries()].filter(([, i]) => i.estado === 'novo').sort((a, b) => (b[1].data + b[1].hora).localeCompare(a[1].data + a[1].hora));
-  for (const [id, imp] of pend) { const sg = impSugestao(imp, usados); if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); if (sg.acao === 'transfPessoa') { if (sg.parId) usados.add('imp:' + S.imps.get(sg.parId)?.pluggyId); } if (sg.acao === 'pagarFatura') { usados.add('fat:' + sg.card.id + imp.data.slice(0, 7)); usados.add('fat:' + sg.card.id + ymAdd(imp.data.slice(0, 7), 1)); if (sg.extra) usados.add(sg.extra.id); } out.push({id, imp, sg}); }
+  for (const [id, imp] of pend) { let sg = impSugestao(imp, usados); if (sg.acao === 'quitarCx') { const pr = out.find(x => x.id === sg.parId && x.sg.acao === 'quitarCx'); if (pr) sg = {...pr.sg, parId: pr.id}; } /* os dois lados (retirada e pagamento) quitam o mesmo previsto */ if (sg.it) usados.add(sg.it.id); if (sg.pid) usados.add('pg:' + sg.pid); if (sg.acao === 'quitarCx') usados.add(sg.it.id); if (sg.acao === 'transfPessoa') { if (sg.parId) usados.add('imp:' + S.imps.get(sg.parId)?.pluggyId); } if (sg.acao === 'pagarFatura') { usados.add('fat:' + sg.card.id + imp.data.slice(0, 7)); usados.add('fat:' + sg.card.id + ymAdd(imp.data.slice(0, 7), 1)); if (sg.extra) usados.add(sg.extra.id); } out.push({id, imp, sg}); }
   // segunda passada: o que sobrou para "lançar" pode ser a soma de lançamentos já feitos (ex.: Pix no crédito = gasto + encargos; dois Pix = moto + transferência)
   const E = engine(), grupos = new Map();
   for (const x of out) if (x.sg.acao === 'lancar') { const k = [x.imp.titular, x.imp.meio, x.imp.tipo, x.imp.data, norm(x.imp.descricao.split('|').pop())].join('|'); if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(x); }
   for (const g of grupos.values()) {
     const im = g[0].imp, tot = round2(g.reduce((a, x) => a + x.imp.valor, 0)), cand = [];
     for (const m of [ymAdd(im.data.slice(0, 7), -1), im.data.slice(0, 7), ymAdd(im.data.slice(0, 7), 1)]) for (const it of (E.byMonth.get(m) || []))
-      if (it.status === 'realizado' && !it.virtual && !usados.has(it.id) && !it.pluggyId && it.titular === im.titular && it.tipo === im.tipo && (im.cartao ? it.meio === im.meio : (!it.meio || it.meio === 'conta')) && Math.abs(diasEntre(it.data || m + '-01', im.data)) <= 1) cand.push(it);
+      if (it.status === 'realizado' && !it.virtual && !usados.has(it.id) && !it.pluggyId && it.titular === im.titular && it.tipo === im.tipo && (im.cartao ? it.meio === im.meio : (!it.meio || it.meio === 'conta')) && Math.abs(diasEntre(it.data || m + '-01', im.data)) <= (im.cartao ? 7 : 1)) cand.push(it);
     let achou = null;
     const busca = (i, sel, soma) => { if (achou) return; if (sel.length && Math.abs(soma - tot) < 0.011 && (sel.length > 1 || g.length > 1)) { achou = sel; return; } if (sel.length >= 3) return; for (let j = i; j < cand.length; j++) busca(j + 1, [...sel, cand[j]], round2(soma + (Number(cand[j].valor) || 0))); };
     busca(0, [], 0);
@@ -1350,6 +1355,11 @@ async function impAplica(id, sgOver) {
     else { const old = S.lanc.get(it.id); if (!old) return false; ok = await put('lancamentos', it.id, {...old, ...extra, status: 'realizado', pluggyId: imp.pluggyId}); }
     return ok && marca('vinculado', {lancId: lid});
   }
+  if (sg.acao === 'quitarCx') { const it = sg.it, par = S.imps.get(sg.parId), ids = [imp.pluggyId, par?.pluggyId].filter(Boolean); let lid = it.id;
+    const extra = {status: 'realizado', data: imp.data, editado: true, pluggyIds: ids};
+    if (it.virtual) { lid = 'rx-' + uid(); if (!await put('lancamentos', lid, {...limpaVirtual(it), ...extra})) return false; } else { const old = S.lanc.get(it.id); if (!old || !await put('lancamentos', it.id, {...old, ...extra})) return false; }
+    if (par) await put('importados', sg.parId, {...par, estado: 'vinculado', conferidoEm: new Date().toISOString(), lancId: lid});
+    return marca('vinculado', {lancId: lid}); }
   if (sg.acao === 'transfPessoa') {
     const par = sg.parId ? S.imps.get(sg.parId) : null, iOut = imp.tipo === 'saida' ? imp : par, iIn = imp.tipo === 'entrada' ? imp : par;
     const outId = 'tr-' + uid(), inId = outId + '-par', common = {competencia: imp.data.slice(0, 7), data: imp.data, valor: round2(imp.valor), status: 'realizado', natureza: 'transferencia', transferencia: true, origem: 'pluggy'};
@@ -1530,12 +1540,13 @@ function vBanco() {
     if (sg.acao === 'pagarFatura') return `Registra o <b>${sg.txt}</b>: as compras do cartão já estão lançadas, este Pix só quita a fatura.`;
     if (sg.acao === 'vincularGrupo') return `Já está no app, somando: <b>${esc(sg.txt)}</b>.`;
     if (sg.acao === 'vincular') return `Já está no app: <b>${esc(sg.it.descricao)}</b> (${dm(sg.it.data)}).`;
+    if (sg.acao === 'quitarCx') return `Paga com dinheiro da caixinha: quita <b>${esc(sg.it.descricao)}</b> (${fmt(sg.it.valor)}). A retirada e o pagamento se anulam na conta.`;
     if (sg.acao === 'transfPessoa') return `Transferência de <b>${esc(titNome(sg.de))}</b> para <b>${esc(titNome(sg.para))}</b>: registra os dois lados, sem contar como gasto nem receita${sg.parId ? ' (o outro lado, da outra conta, também é conferido)' : ''}.`;
     if (sg.acao === 'quitar') return `Quita o previsto <b>${esc(sg.it.descricao)}</b> (${fmt(sg.it.valor)}${Math.abs(sg.it.valor - imp.valor) > 0.004 ? ` → ${fmt(imp.valor)}` : ''}).`;
     if (sg.caixinha) return `${sg.cat === 'caixinha-aporte' ? 'Guardar na' : 'Tirar da'} caixinha <b>${esc(S.cxs.get(sg.caixinha)?.nome || '')}</b> (sai e volta para a conta; não é gasto).`;
     return `Lançar como <b>${esc(catNome(sg.cat))}</b>${sg.forn ? ` · ${esc(sg.forn)}` : ''}${imp.cartao ? ` · fatura de ${ymLong(competenciaCartao(cardById(imp.meio) || {}, imp.data))}` : ''}.`;
   };
-  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? (sg.caixinha ? 'Lançar na caixinha' : 'Lançar') : sg.acao === 'quitar' ? 'Quitar' : sg.acao === 'pagarFatura' ? 'Registrar pagamento' : sg.acao === 'transfPessoa' ? 'Registrar transferência' : 'Confirmar';
+  const btn = ({sg}) => sg.acao === 'semConta' ? '' : sg.acao === 'ignorar' ? 'Ignorar' : sg.acao === 'lancar' ? (sg.caixinha ? 'Lançar na caixinha' : 'Lançar') : sg.acao === 'quitar' ? 'Quitar' : sg.acao === 'pagarFatura' ? 'Registrar pagamento' : sg.acao === 'transfPessoa' ? 'Registrar transferência' : sg.acao === 'quitarCx' ? 'Quitar' : 'Confirmar';
   const aplicaveis = L.filter(x => x.sg.acao !== 'semConta' && x.sg.acao !== 'lancar');
   const semConta = L.filter(x => x.sg.acao === 'semConta');
   const vis = L.filter(x => x.sg.acao !== 'semConta');
@@ -3571,7 +3582,9 @@ function openImpRev(id) {
   const imp = S.imps.get(id); if (!imp) return; const x = impLista().find(y => y.id === id); const sg = x?.sg || {};
   const descr = (imp.descricao.split('|').pop() || imp.descricao).trim();
   const cat = sg.acao === 'lancar' ? sg.cat : (catDoFornecedor(sg.forn || descr, imp.tipo) || '');
-  S.impForm = {id, tipo: imp.tipo, descricao: sg.acao === 'lancar' && sg.desc ? sg.desc : descr, fornecedor: sg.acao === 'lancar' && sg.forn ? sg.forn : descr, categoria: cat, natureza: sg.nat && sg.nat !== 'transferencia' ? sg.nat : 'avulso', impulso: false, caixinha: sg.acao === 'lancar' ? sg.caixinha || null : null, novaCat: false};
+  const outro = sg.acao === 'transfPessoa' ? (imp.tipo === 'saida' ? sg.para : sg.de) : null;
+  const dest = outro ? 'tit:' + outro : sg.caixinha ? 'cx:' + sg.caixinha : sg.acao === 'ignorar' && /mesma pessoa/.test(sg.motivo || '') ? 'propria' : '';
+  S.impForm = {id, modo: dest ? 'transf' : 'gasto', dest, tipo: imp.tipo, descricao: sg.acao === 'lancar' && sg.desc ? sg.desc : descr, fornecedor: sg.acao === 'lancar' && sg.forn ? sg.forn : descr, categoria: cat, natureza: sg.nat && sg.nat !== 'transferencia' ? sg.nat : 'avulso', impulso: false, caixinha: sg.acao === 'lancar' ? sg.caixinha || null : null, novaCat: false};
   drawImpRev();
 }
 function drawImpRev() {
@@ -3580,17 +3593,31 @@ function drawImpRev() {
   $('#modal').innerHTML = `<div class="scrim" data-act="closeScrim"><form class="sheet" id="imp-form" autocomplete="off">
     <div class="sheet-head"><h2>Lançar do banco</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
     <div class="hint"><b>${imp.tipo === 'entrada' ? '+' : '−'}${fmt(imp.valor)}</b> em ${imp.data.split('-').reverse().join('/')} · ${esc(imp.conta || '')}<br><small>No banco: ${esc(imp.descricao)}</small><br><small>Valor, data e conta vêm do banco e não mudam aqui.</small></div>
+    <div class="tipo-seg t2" role="group" aria-label="Tipo"><button type="button" class="${F.tipo === 'saida' ? 's' : 'e'}" data-act="irModo" data-v="gasto" aria-pressed="${F.modo === 'gasto'}">${F.tipo === 'saida' ? 'Despesa' : 'Receita'}</button><button type="button" class="t" data-act="irModo" data-v="transf" aria-pressed="${F.modo === 'transf'}">Transferência</button></div>
+    ${F.modo === 'transf' ? (() => { const cxs = [...S.cxs].filter(([, c]) => c.ativa !== false && c.titular === imp.titular), ps = C().titulares.filter(t => t.id !== imp.titular && t.id !== pjId() && imp.titular !== pjId());
+      return `<div class="field"><label for="ir-dest">${F.tipo === 'saida' ? 'Para onde foi' : 'De onde veio'}</label><select class="input" id="ir-dest" data-fi="dest" required><option value="">Escolha…</option>
+        ${cxs.length ? `<optgroup label="Caixinhas">${cxs.map(([cid, c]) => `<option value="cx:${esc(cid)}" ${F.dest === 'cx:' + cid ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>` : ''}
+        ${ps.length ? `<optgroup label="Pessoas">${ps.map(t => `<option value="tit:${t.id}" ${F.dest === 'tit:' + t.id ? 'selected' : ''}>${F.tipo === 'saida' ? 'Conta de' : 'Conta de'} ${esc(t.nome)}</option>`).join('')}</optgroup>` : ''}
+        <option value="propria" ${F.dest === 'propria' ? 'selected' : ''}>Outra conta de ${esc(titNome(imp.titular))} (não muda o saldo)</option></select>
+        <div class="hint" style="margin-top:6px">${!F.dest ? 'Transferência não conta como gasto nem como receita: o dinheiro só muda de lugar.' : F.dest.startsWith('cx:') ? `${F.tipo === 'saida' ? 'Guarda' : 'Tira'} o valor ${F.tipo === 'saida' ? 'na' : 'da'} caixinha ${esc(S.cxs.get(F.dest.slice(3))?.nome || '')}.` : F.dest.startsWith('tit:') ? `Registra os dois lados: sai de ${esc(titNome(F.tipo === 'saida' ? imp.titular : F.dest.slice(4)))} e entra para ${esc(titNome(F.tipo === 'saida' ? F.dest.slice(4) : imp.titular))}.` : 'Entre contas da mesma pessoa: a transação é ignorada, porque o saldo total não muda.'}</div></div>`; })() : `
     <div class="field"><label for="ir-desc">Descrição</label><input class="input" id="ir-desc" data-fi="descricao" value="${esc(F.descricao)}" required></div>
     <div class="field"><label for="ir-forn">Fornecedor</label><input class="input" id="ir-forn" list="dl-ir-forn" data-fi="fornecedor" value="${esc(F.fornecedor)}"><datalist id="dl-ir-forn">${forns.map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
     <div class="field"><label for="ir-cat">Categoria</label><select class="input" id="ir-cat" data-fi="categoria" required><option value="">Escolha…</option>${catOptions(F.tipo, F.categoria, true)}<option value="__nova">+ Nova categoria…</option></select>${F.novaCat ? novaCatHTML(F.tipo, 'imp') : ''}<div id="ir-sug">${impRevSugHTML()}</div></div>
     ${isFora(F.categoria) ? '' : `<div class="field"><label for="ir-nat">Natureza</label><select class="input" id="ir-nat" data-fi="natureza">${NATUREZAS.filter(n => !['transferencia', 'ajuste'].includes(n[0])).map(([id, n]) => `<option value="${id}" ${id === F.natureza ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`}
-    ${F.tipo === 'saida' && F.categoria !== 'impulsos' && !isFora(F.categoria) ? `<label class="switch"><input type="checkbox" data-fi="impulso" ${F.impulso ? 'checked' : ''}>Foi impulso ou besteira? (conta no teto de impulsos)</label>` : ''}
+    ${F.tipo === 'saida' && F.categoria !== 'impulsos' && !isFora(F.categoria) ? `<label class="switch"><input type="checkbox" data-fi="impulso" ${F.impulso ? 'checked' : ''}>Foi impulso ou besteira? (conta no teto de impulsos)</label>` : ''}`}
     <div class="sheet-foot"><span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" ${S.readOnly ? 'disabled' : ''}>Lançar</button></div>
   </form></div>`;
 }
 function impRevSugHTML() { const F = S.impForm; if (!F) return ''; const s = catDoFornecedor(F.fornecedor.trim(), F.tipo); return s && s !== F.categoria ? `<div class="sugcat">${esc(F.fornecedor)} costuma ser <b>${esc(catNome(s))}</b> <button type="button" class="btn sm" data-act="impRevSug" data-c="${esc(s)}">Usar</button></div>` : ''; }
 async function submitImpRev() {
   const F = S.impForm; if (!F) return;
+  if (F.modo === 'transf') { const imp = S.imps.get(F.id); if (!imp) return; if (!F.dest) return toast(F.tipo === 'saida' ? 'Escolha para onde foi.' : 'Escolha de onde veio.');
+    let sg;
+    if (F.dest === 'propria') sg = {acao: 'ignorar', motivo: 'Transferência entre contas da mesma pessoa'};
+    else if (F.dest.startsWith('cx:')) { const cx = F.dest.slice(3), c = S.cxs.get(cx); sg = {acao: 'lancar', cat: imp.tipo === 'saida' ? 'caixinha-aporte' : 'caixinha-resgate', caixinha: cx, forn: c?.nome || '', desc: `${imp.tipo === 'saida' ? 'Guardar na caixinha' : 'Tirar da caixinha'} ${c?.nome || ''}`, nat: 'transferencia'}; }
+    else { const tp = F.dest.slice(4); const par = [...S.imps.entries()].find(([, o]) => o !== imp && !o.cartao && o.titular === tp && o.tipo !== imp.tipo && o.estado === 'novo' && Math.abs(o.valor - imp.valor) < 0.011 && Math.abs(diasEntre(o.data, imp.data)) <= 2);
+      sg = {acao: 'transfPessoa', de: imp.tipo === 'saida' ? imp.titular : tp, para: imp.tipo === 'saida' ? tp : imp.titular, parId: par?.[0] || null}; }
+    const id = F.id; closeModal(); const ok = await impAplica(id, sg); if (ok) toast(sg.acao === 'ignorar' ? 'Marcado como transferência entre contas.' : sg.acao === 'transfPessoa' ? 'Transferência registrada nos dois lados.' : 'Movimento da caixinha registrado.'); return; }
   if (!F.descricao.trim()) return toast('Escreva uma descrição.'); if (!F.categoria) return toast('Escolha uma categoria.');
   const sg = {acao: 'lancar', cat: F.categoria, desc: F.descricao.trim(), forn: F.fornecedor.trim(), nat: isFora(F.categoria) ? 'transferencia' : F.natureza || 'avulso', ...(F.caixinha && ['caixinha-aporte', 'caixinha-resgate'].includes(F.categoria) ? {caixinha: F.caixinha} : {}), ...(F.impulso && F.tipo === 'saida' ? {impulso: true} : {})};
   const id = F.id; closeModal(); const ok = await impAplica(id, sg); if (ok) toast(`Lançado em ${catNome(F.categoria)}.`);
@@ -3817,6 +3844,7 @@ document.addEventListener('click', async e => {
     case 'giSalvar': { const L = []; for (let i = 0; i < 6; i++) { const c = document.querySelector(`[data-gi-cat="${i}"]`)?.value, t = parseValor(document.querySelector(`[data-gi-teto="${i}"]`)?.value || ''); if (c && !L.some(x => x.cat === c)) L.push({cat: c, teto: isNaN(t) || t <= 0 ? null : round2(t)}); } S.giEdit = false; await saveConfig({gastosImportam: L}); toast('Gastos que importam atualizados.'); break; }
     case 'tema': setTema(temaAtual() === 'dark' ? 'light' : 'dark'); render(); break;
     case 'impRev': openImpRev(el.dataset.id); break;
+    case 'irModo': if (S.impForm) { S.impForm.modo = el.dataset.v; drawImpRev(); } break;
     case 'impRevSug': if (S.impForm) { S.impForm.categoria = el.dataset.c; drawImpRev(); } break;
     case 'criaCat': await criaCatInline(el.dataset.ctx); break;
     case 'criaCatX': { const F = el.dataset.ctx === 'imp' ? S.impForm : S.form; if (F) { F.novaCat = false; el.dataset.ctx === 'imp' ? drawImpRev() : drawForm(!F.id); } break; }
@@ -3961,7 +3989,7 @@ document.addEventListener('input', e => {
   if (t.dataset.fi && S.impForm) { const k = t.dataset.fi;
     if (k === 'categoria' && t.value === '__nova') { S.impForm.catAntes = S.impForm.categoria; S.impForm.categoria = ''; S.impForm.novaCat = true; drawImpRev(); setTimeout(() => $('#nc2-nome')?.focus(), 30); return; }
     S.impForm[k] = t.type === 'checkbox' ? t.checked : t.value;
-    if (k === 'categoria') { drawImpRev(); return; }
+    if (k === 'categoria' || k === 'dest') { drawImpRev(); return; }
     if (k === 'fornecedor') { const b = $('#ir-sug'); if (b) b.innerHTML = impRevSugHTML(); }
     return; }
   if (t.dataset.f && S.form) {
