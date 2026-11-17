@@ -3506,6 +3506,10 @@ function formComp() {
   return {card, comp, statusDef: F.status || (comp > HOJE_YM && !card ? 'previsto' : 'realizado')};
 }
 function hintHTML() {
+  if (S.form?.impId) { const F = S.form, imp = S.imps.get(F.impId); if (!imp) return '';
+    if (F.modo === 'transf') { const o = F.outro || '', sai = imp.tipo === 'saida';
+      return !o ? 'Transferência não conta como gasto nem como receita: o dinheiro só muda de lugar.' : o.startsWith('cx:') ? `${sai ? 'Guarda' : 'Tira'} ${fmt(imp.valor)} ${sai ? 'na' : 'da'} caixinha <b>${esc(S.cxs.get(o.slice(3))?.nome || '')}</b>. Não é gasto: o dinheiro continua seu.` : o === 'propria' ? 'Entre contas da mesma pessoa: a transação é ignorada, porque o saldo total não muda.' : `Registra os dois lados: sai da conta de <b>${esc(titNome(sai ? imp.titular : o))}</b> e entra na de <b>${esc(titNome(sai ? o : imp.titular))}</b>.`; }
+    const card = imp.cartao ? cardById(imp.meio) : null; return card ? `Compra no cartão: cai na fatura de <b>${ymLong(competenciaCartao(card, imp.data))}</b>.` : `Entra no fluxo de <b>${ymLong(imp.data.slice(0, 7))}</b> como ${imp.tipo === 'saida' ? 'despesa' : 'receita'}.`; }
   const F = S.form; const {card, comp, statusDef} = formComp(); const v = parseValor(F.valor); const np = Number(F.parcelas) || 1; const novo = !F.id;
   if (F.modo === 'transf' && (isCx(F.titular) || isCx(F.para))) {
     if (isCx(F.titular) && isCx(F.para)) return `Move saldo entre caixinhas. Não passa pela conta de ninguém.`;
@@ -3521,7 +3525,7 @@ function ptOptions(sel, excl) {
   return `<optgroup label="Contas">${ps}</optgroup>${cs ? `<optgroup label="Caixinhas">${cs}</optgroup>` : ''}`;
 }
 function drawForm(novo) {
-  const F = S.form; const c = C(); const tr = F.modo === 'transf';
+  const F = S.form; const c = C(); const tr = F.modo === 'transf'; const IM = !!F.impId, imp = IM ? S.imps.get(F.impId) : null;
   const cards = c.cartoes.filter(k => k.titular === F.titular && (k.ativo || k.id === F.meio));
   const {statusDef} = formComp();
   const descs = [...new Set([...S.lanc.values()].filter(l => l.tipo === F.tipo && !isFora(l.categoria)).map(l => l.descricao))].slice(-400);
@@ -3529,14 +3533,15 @@ function drawForm(novo) {
   const np = Number(F.parcelas) || 1;
   const natDef = F.natureza || (np > 1 ? 'parcelado' : F.repetir ? 'recorrente' : 'avulso');
   $('#modal').innerHTML = `<div class="scrim" data-act="closeScrim"><form class="sheet" id="lanc-form" autocomplete="off">
-    <div class="sheet-head"><h2>${novo ? 'Novo lançamento' : F.virtual ? 'Lançamento recorrente' : tr ? 'Editar transferência' : 'Editar lançamento'}</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
+    <div class="sheet-head"><h2>${IM ? 'Lançar do banco' : novo ? 'Novo lançamento' : F.virtual ? 'Lançamento recorrente' : tr ? 'Editar transferência' : 'Editar lançamento'}</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
     ${F.virtual ? `<div class="hint">Este valor vem de uma recorrência. Salvar aqui grava só ${ymLong(F.competencia)}; para mudar todos os meses, edite a recorrência.</div>` : ''}
     ${F.parcela ? `<div class="hint">Parcela ${F.parcela.n} de ${F.parcela.total}. A alteração vale só para esta parcela.</div>` : ''}
     ${F.obs ? `<div class="hint">${esc(F.obs)}</div>` : ''}
-    <div class="tipo-seg ${novo || !F.id ? 't3' : 'one'}" role="group">${novo || !F.id ? [['saida', 'Saída', 's'], ['entrada', 'Entrada', 'e'], ['transf', 'Transferência', 't']].map(([m, n, k]) => `<button type="button" class="${k}" data-act="ftipo" data-t="${m}" aria-pressed="${F.modo === m}">${n}</button>`).join('')
-      : `<button type="button" class="${tr ? 't' : F.tipo === 'saida' ? 's' : 'e'}" aria-pressed="true" disabled>${tr ? 'Transferência' : F.tipo === 'saida' ? 'Saída' : 'Entrada'}</button>`}</div>
-    <div class="field"><label for="fl-valor">Valor${np > 1 ? ' total da compra' : ''}</label><input class="amount" id="fl-valor" inputmode="decimal" placeholder="0,00" value="${esc(F.valor)}" data-f="valor" required></div>
-    ${tr ? `<div class="fields2">
+    ${IM ? `<div class="hint">No banco: <b>${esc(imp.descricao)}</b><br><small>${esc(imp.conta || '')} · valor, data e conta vêm do banco.</small></div>
+    <div class="tipo-seg" role="group">${[[imp.tipo, imp.tipo === 'saida' ? 'Saída' : 'Entrada', imp.tipo === 'saida' ? 's' : 'e'], ['transf', 'Transferência', 't']].map(([m, n, k]) => `<button type="button" class="${k}" data-act="ftipo" data-t="${m}" aria-pressed="${F.modo === m}">${n}</button>`).join('')}</div>` : `<div class="tipo-seg ${novo || !F.id ? 't3' : 'one'}" role="group">${novo || !F.id ? [['saida', 'Saída', 's'], ['entrada', 'Entrada', 'e'], ['transf', 'Transferência', 't']].map(([m, n, k]) => `<button type="button" class="${k}" data-act="ftipo" data-t="${m}" aria-pressed="${F.modo === m}">${n}</button>`).join('')
+      : `<button type="button" class="${tr ? 't' : F.tipo === 'saida' ? 's' : 'e'}" aria-pressed="true" disabled>${tr ? 'Transferência' : F.tipo === 'saida' ? 'Saída' : 'Entrada'}</button>`}</div>`}
+    <div class="field"><label for="fl-valor">Valor${np > 1 ? ' total da compra' : ''}</label><input class="amount" id="fl-valor" inputmode="decimal" placeholder="0,00" value="${esc(F.valor)}" data-f="valor" required ${IM ? 'readonly' : ''}></div>
+    ${tr && IM ? impTransfHTML() : tr ? `<div class="fields2">
         <div class="field"><label for="fl-tit">De</label><select class="input" id="fl-tit" data-f="titular">${ptOptions(F.titular, null)}</select></div>
         <div class="field"><label for="fl-para">Para</label><select class="input" id="fl-para" data-f="para">${ptOptions(F.para, F.titular)}</select></div></div>
       <div class="field"><label for="fl-desc">Descrição (opcional)</label><input class="input" id="fl-desc" value="${esc(F.descricao)}" data-f="descricao" placeholder="${isCx(F.para) ? 'Guardar na ' + esc(ptNome(F.para).toLowerCase().replace('caixinha ', 'caixinha ')) : isCx(F.titular) ? 'Resgate da ' + esc(ptNome(F.titular)) : 'Transferência para ' + esc(titNome(F.para))}"></div>`
@@ -3547,24 +3552,24 @@ function drawForm(novo) {
       <div class="field"><label for="fl-cat">Categoria</label><select class="input" id="fl-cat" data-f="categoria" required><option value="">Escolha…</option>${catOptions(F.tipo, F.categoria)}<option value="__nova">+ Nova categoria…</option></select>${F.novaCat ? novaCatHTML(F.tipo, 'form') : ''}<div id="fl-sugcat">${sugCatHTML()}</div></div>
       <div class="field"><label for="fl-tit">Titular</label><select class="input" id="fl-tit" data-f="titular">${c.titulares.map(t => `<option value="${t.id}" ${t.id === F.titular ? 'selected' : ''}>${esc(t.nome)}</option>`).join('')}</select></div>`}
     <div class="fields2">
-      <div class="field"><label for="fl-data">Data</label><input class="input" type="date" id="fl-data" value="${F.data}" data-f="data" required></div>
-      ${tr && (isCx(F.titular) || isCx(F.para)) ? '<div></div>' : `<div class="field"><label for="fl-meio">${tr ? 'Sai de' : 'Pago com'}</label><select class="input" id="fl-meio" data-f="meio"><option value="conta">Conta / Pix / débito</option>${cards.map(k => `<option value="${k.id}" ${k.id === F.meio ? 'selected' : ''}>Cartão ${esc(k.nome)}</option>`).join('')}</select></div>`}
+      <div class="field"><label for="fl-data">Data</label><input class="input" type="date" id="fl-data" value="${F.data}" data-f="data" required ${IM ? 'readonly' : ''}></div>
+      ${IM ? `<div class="field"><label>${imp.tipo === 'saida' ? 'Pago com' : 'Recebido em'}</label><input class="input" value="${esc(imp.cartao ? 'Cartão ' + (cardById(imp.meio)?.nome || '') : 'Conta / Pix / débito')}" readonly></div>` : tr && (isCx(F.titular) || isCx(F.para)) ? '<div></div>' : `<div class="field"><label for="fl-meio">${tr ? 'Sai de' : 'Pago com'}</label><select class="input" id="fl-meio" data-f="meio"><option value="conta">Conta / Pix / débito</option>${cards.map(k => `<option value="${k.id}" ${k.id === F.meio ? 'selected' : ''}>Cartão ${esc(k.nome)}</option>`).join('')}</select></div>`}
     </div>
-    ${novo && F.modo === 'saida' ? `<div class="field"><label for="fl-parc">Parcelas</label><select class="input" id="fl-parc" data-f="parcelas">${Array.from({length: 24}, (_, i) => i + 1).map(n => `<option value="${n}" ${n === np ? 'selected' : ''}>${n === 1 ? 'À vista' : n + '×'}</option>`).join('')}</select></div>` :
+    ${IM ? '' : novo && F.modo === 'saida' ? `<div class="field"><label for="fl-parc">Parcelas</label><select class="input" id="fl-parc" data-f="parcelas">${Array.from({length: 24}, (_, i) => i + 1).map(n => `<option value="${n}" ${n === np ? 'selected' : ''}>${n === 1 ? 'À vista' : n + '×'}</option>`).join('')}</select></div>` :
       `<div class="field"><label for="fl-status">Status</label><select class="input" id="fl-status" data-f="status"><option value="realizado" ${statusDef === 'realizado' ? 'selected' : ''}>Confirmado</option><option value="previsto" ${statusDef === 'previsto' ? 'selected' : ''}>Previsto</option></select></div>`}
     ${!tr && F.tipo === 'saida' && F.categoria !== 'impulsos' ? `<label class="switch"><input type="checkbox" id="fl-imp" data-f="impulso" ${F.impulso ? 'checked' : ''}>Foi impulso ou besteira? (conta no teto de impulsos, sem mudar a categoria)</label>` : ''}
     <div class="hint" id="fl-hint">${hintHTML()}</div>
-    ${novo && !tr ? `<label class="switch"><input type="checkbox" id="fl-rep" data-f="repetir" ${F.repetir ? 'checked' : ''} ${np > 1 ? 'disabled' : ''}>Repetir todo mês (cria uma recorrência)</label>` : ''}
+    ${novo && !tr && !IM ? `<label class="switch"><input type="checkbox" id="fl-rep" data-f="repetir" ${F.repetir ? 'checked' : ''} ${np > 1 ? 'disabled' : ''}>Repetir todo mês (cria uma recorrência)</label>` : ''}
     <div class="sheet-foot">
       ${!novo && !F.virtual ? `<button type="button" class="btn danger" data-act="askDel">Excluir</button>` : ''}
       ${F.virtual ? `<button type="button" class="btn" data-act="editRec" data-id="${esc(F.recorrencia)}">Editar recorrência</button>` : ''}
-      <span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" ${S.readOnly ? 'disabled' : ''}>Salvar</button></div>
+      <span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" ${S.readOnly ? 'disabled' : ''}>${IM ? 'Lançar' : 'Salvar'}</button></div>
     <div id="confirm-area"></div>
   </form></div>`;
   const fv = $('#fl-valor'); if (novo && fv) setTimeout(() => fv.focus(), 30);
 }
 function novaCatHTML(tipo, ctx) {
-  const gs = C().grupos.filter(g => g.tipo === tipo), F = ctx === 'imp' ? S.impForm : S.form;
+  const gs = C().grupos.filter(g => g.tipo === tipo), F = S.form;
   const gDef = catById(F?.catAntes)?.grupo || (gs.find(g => g.id === (tipo === 'entrada' ? 'outras-entradas' : 'compras')) || gs[0])?.id;
   return `<div class="nova-cat"><input class="input" id="nc2-nome" placeholder="Nome da nova categoria" aria-label="Nome da nova categoria"><select class="input" id="nc2-grp" aria-label="Grupo">${gs.map(g => `<option value="${g.id}" ${g.id === gDef ? 'selected' : ''}>${esc(g.nome)}</option>`).join('')}</select><button type="button" class="btn sm primary" data-act="criaCat" data-ctx="${ctx}">Criar</button><button type="button" class="btn ghost sm" data-act="criaCatX" data-ctx="${ctx}">Cancelar</button></div>`;
 }
@@ -3572,57 +3577,45 @@ async function criaCatInline(ctx) {
   const n = ($('#nc2-nome')?.value || '').trim(), g = $('#nc2-grp')?.value; if (!n) return toast('Dê um nome à categoria.'); if (!g) return toast('Escolha o grupo.');
   const ja = C().categorias.find(c => norm(c.nome) === norm(n) && c.grupo === g);
   const id = ja ? ja.id : norm(n).replace(/ /g, '-') + '-' + uid().slice(-3);
-  const F = ctx === 'imp' ? S.impForm : S.form; if (!F) return;
+  const F = S.form; if (!F) return;
   if (!ja) { const snap = JSON.stringify({...F}); await saveConfig({categorias: [...C().categorias, {id, nome: n, grupo: g}]}); Object.assign(F, JSON.parse(snap)); }
-  if (ctx === 'imp') { S.impForm = F; F.categoria = id; F.novaCat = false; drawImpRev(); } else { S.form = F; F.categoria = id; F.novaCat = false; drawForm(!F.id); }
+  S.form = F; F.categoria = id; F.novaCat = false; drawForm(!F.id);
   toast(ja ? `Categoria ${n} já existia e foi escolhida.` : `Categoria ${n} criada.`);
 }
-/* ============ lançar do banco com revisão ============ */
+/* ============ lançar do banco com revisão (mesmo formulário dos lançamentos) ============ */
 function openImpRev(id) {
   const imp = S.imps.get(id); if (!imp) return; const x = impLista().find(y => y.id === id); const sg = x?.sg || {};
   const descr = (imp.descricao.split('|').pop() || imp.descricao).trim();
-  const cat = sg.acao === 'lancar' ? sg.cat : (catDoFornecedor(sg.forn || descr, imp.tipo) || '');
-  const outro = sg.acao === 'transfPessoa' ? (imp.tipo === 'saida' ? sg.para : sg.de) : null;
-  const dest = outro ? 'tit:' + outro : sg.caixinha ? 'cx:' + sg.caixinha : sg.acao === 'ignorar' && /mesma pessoa/.test(sg.motivo || '') ? 'propria' : '';
-  S.impForm = {id, modo: dest ? 'transf' : 'gasto', dest, tipo: imp.tipo, descricao: sg.acao === 'lancar' && sg.desc ? sg.desc : descr, fornecedor: sg.acao === 'lancar' && sg.forn ? sg.forn : descr, categoria: cat, natureza: sg.nat && sg.nat !== 'transferencia' ? sg.nat : 'avulso', impulso: false, caixinha: sg.acao === 'lancar' ? sg.caixinha || null : null, novaCat: false};
-  drawImpRev();
+  const outroT = sg.acao === 'transfPessoa' ? (imp.tipo === 'saida' ? sg.para : sg.de) : null;
+  const outro = outroT || (sg.caixinha ? 'cx:' + sg.caixinha : sg.acao === 'ignorar' && /mesma pessoa/.test(sg.motivo || '') ? 'propria' : '');
+  const cat = sg.acao === 'lancar' && !sg.caixinha ? sg.cat : (sg.it?.categoria && !isFora(sg.it.categoria) ? sg.it.categoria : catDoFornecedor(sg.forn || descr, imp.tipo) || '');
+  S.form = {id: null, impId: id, virtual: false, recorrencia: null, parcela: null, par: null, modo: outro ? 'transf' : imp.tipo, tipo: imp.tipo, valor: String(imp.valor).replace('.', ','),
+    descricao: sg.acao === 'lancar' && sg.desc && !sg.caixinha ? sg.desc : descr, categoria: cat, fornecedor: sg.acao === 'lancar' && sg.forn && !sg.caixinha ? sg.forn : descr, natureza: sg.nat && sg.nat !== 'transferencia' ? sg.nat : 'avulso',
+    titular: imp.titular, para: '', outro, data: imp.data, meio: imp.meio || 'conta', parcelas: 1, status: 'realizado', repetir: false, competencia: null, obs: '', impulso: false};
+  drawForm(true);
 }
-function drawImpRev() {
-  const F = S.impForm, imp = S.imps.get(F.id); if (!imp) return;
-  const forns = [...fornecedores().keys()].sort((a, b) => a.localeCompare(b));
-  $('#modal').innerHTML = `<div class="scrim" data-act="closeScrim"><form class="sheet" id="imp-form" autocomplete="off">
-    <div class="sheet-head"><h2>Lançar do banco</h2><button type="button" class="icon-btn" data-act="close" aria-label="Fechar">✕</button></div>
-    <div class="hint"><b>${imp.tipo === 'entrada' ? '+' : '−'}${fmt(imp.valor)}</b> em ${imp.data.split('-').reverse().join('/')} · ${esc(imp.conta || '')}<br><small>No banco: ${esc(imp.descricao)}</small><br><small>Valor, data e conta vêm do banco e não mudam aqui.</small></div>
-    <div class="tipo-seg t2" role="group" aria-label="Tipo"><button type="button" class="${F.tipo === 'saida' ? 's' : 'e'}" data-act="irModo" data-v="gasto" aria-pressed="${F.modo === 'gasto'}">${F.tipo === 'saida' ? 'Despesa' : 'Receita'}</button><button type="button" class="t" data-act="irModo" data-v="transf" aria-pressed="${F.modo === 'transf'}">Transferência</button></div>
-    ${F.modo === 'transf' ? (() => { const cxs = [...S.cxs].filter(([, c]) => c.ativa !== false && c.titular === imp.titular), ps = C().titulares.filter(t => t.id !== imp.titular && t.id !== pjId() && imp.titular !== pjId());
-      return `<div class="field"><label for="ir-dest">${F.tipo === 'saida' ? 'Para onde foi' : 'De onde veio'}</label><select class="input" id="ir-dest" data-fi="dest" required><option value="">Escolha…</option>
-        ${cxs.length ? `<optgroup label="Caixinhas">${cxs.map(([cid, c]) => `<option value="cx:${esc(cid)}" ${F.dest === 'cx:' + cid ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>` : ''}
-        ${ps.length ? `<optgroup label="Pessoas">${ps.map(t => `<option value="tit:${t.id}" ${F.dest === 'tit:' + t.id ? 'selected' : ''}>${F.tipo === 'saida' ? 'Conta de' : 'Conta de'} ${esc(t.nome)}</option>`).join('')}</optgroup>` : ''}
-        <option value="propria" ${F.dest === 'propria' ? 'selected' : ''}>Outra conta de ${esc(titNome(imp.titular))} (não muda o saldo)</option></select>
-        <div class="hint" style="margin-top:6px">${!F.dest ? 'Transferência não conta como gasto nem como receita: o dinheiro só muda de lugar.' : F.dest.startsWith('cx:') ? `${F.tipo === 'saida' ? 'Guarda' : 'Tira'} o valor ${F.tipo === 'saida' ? 'na' : 'da'} caixinha ${esc(S.cxs.get(F.dest.slice(3))?.nome || '')}.` : F.dest.startsWith('tit:') ? `Registra os dois lados: sai de ${esc(titNome(F.tipo === 'saida' ? imp.titular : F.dest.slice(4)))} e entra para ${esc(titNome(F.tipo === 'saida' ? F.dest.slice(4) : imp.titular))}.` : 'Entre contas da mesma pessoa: a transação é ignorada, porque o saldo total não muda.'}</div></div>`; })() : `
-    <div class="field"><label for="ir-desc">Descrição</label><input class="input" id="ir-desc" data-fi="descricao" value="${esc(F.descricao)}" required></div>
-    <div class="field"><label for="ir-forn">Fornecedor</label><input class="input" id="ir-forn" list="dl-ir-forn" data-fi="fornecedor" value="${esc(F.fornecedor)}"><datalist id="dl-ir-forn">${forns.map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
-    <div class="field"><label for="ir-cat">Categoria</label><select class="input" id="ir-cat" data-fi="categoria" required><option value="">Escolha…</option>${catOptions(F.tipo, F.categoria, true)}<option value="__nova">+ Nova categoria…</option></select>${F.novaCat ? novaCatHTML(F.tipo, 'imp') : ''}<div id="ir-sug">${impRevSugHTML()}</div></div>
-    ${isFora(F.categoria) ? '' : `<div class="field"><label for="ir-nat">Natureza</label><select class="input" id="ir-nat" data-fi="natureza">${NATUREZAS.filter(n => !['transferencia', 'ajuste'].includes(n[0])).map(([id, n]) => `<option value="${id}" ${id === F.natureza ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`}
-    ${F.tipo === 'saida' && F.categoria !== 'impulsos' && !isFora(F.categoria) ? `<label class="switch"><input type="checkbox" data-fi="impulso" ${F.impulso ? 'checked' : ''}>Foi impulso ou besteira? (conta no teto de impulsos)</label>` : ''}`}
-    <div class="sheet-foot"><span style="flex:1"></span><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" ${S.readOnly ? 'disabled' : ''}>Lançar</button></div>
-  </form></div>`;
+function impTransfHTML() {
+  const F = S.form, imp = S.imps.get(F.impId), sai = imp.tipo === 'saida';
+  const cxs = [...S.cxs].filter(([, c]) => c.ativa !== false && c.titular === imp.titular), ps = C().titulares.filter(t => t.id !== imp.titular && t.id !== pjId() && imp.titular !== pjId());
+  const opts = `<option value="">Escolha…</option>${cxs.length ? `<optgroup label="Caixinhas de ${esc(titNome(imp.titular))}">${cxs.map(([cid, c]) => `<option value="cx:${esc(cid)}" ${F.outro === 'cx:' + cid ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</optgroup>` : ''}${ps.length ? `<optgroup label="Pessoas">${ps.map(t => `<option value="${t.id}" ${F.outro === t.id ? 'selected' : ''}>Conta de ${esc(t.nome)}</option>`).join('')}</optgroup>` : ''}<option value="propria" ${F.outro === 'propria' ? 'selected' : ''}>Outra conta de ${esc(titNome(imp.titular))}</option>`;
+  const fixo = `<div class="field"><label>${sai ? 'De' : 'Para'}</label><input class="input" value="Conta de ${esc(titNome(imp.titular))}" readonly></div>`;
+  const sel = `<div class="field"><label for="fl-outro">${sai ? 'Para' : 'De'}</label><select class="input" id="fl-outro" data-f="outro" required>${opts}</select></div>`;
+  return `<div class="fields2">${sai ? fixo + sel : sel + fixo}</div><div class="field"><label for="fl-desc">Descrição (opcional)</label><input class="input" id="fl-desc" value="${esc(F.descricao)}" data-f="descricao"></div>`;
 }
-function impRevSugHTML() { const F = S.impForm; if (!F) return ''; const s = catDoFornecedor(F.fornecedor.trim(), F.tipo); return s && s !== F.categoria ? `<div class="sugcat">${esc(F.fornecedor)} costuma ser <b>${esc(catNome(s))}</b> <button type="button" class="btn sm" data-act="impRevSug" data-c="${esc(s)}">Usar</button></div>` : ''; }
-async function submitImpRev() {
-  const F = S.impForm; if (!F) return;
-  if (F.modo === 'transf') { const imp = S.imps.get(F.id); if (!imp) return; if (!F.dest) return toast(F.tipo === 'saida' ? 'Escolha para onde foi.' : 'Escolha de onde veio.');
-    let sg;
-    if (F.dest === 'propria') sg = {acao: 'ignorar', motivo: 'Transferência entre contas da mesma pessoa'};
-    else if (F.dest.startsWith('cx:')) { const cx = F.dest.slice(3), c = S.cxs.get(cx); sg = {acao: 'lancar', cat: imp.tipo === 'saida' ? 'caixinha-aporte' : 'caixinha-resgate', caixinha: cx, forn: c?.nome || '', desc: `${imp.tipo === 'saida' ? 'Guardar na caixinha' : 'Tirar da caixinha'} ${c?.nome || ''}`, nat: 'transferencia'}; }
-    else { const tp = F.dest.slice(4); const par = [...S.imps.entries()].find(([, o]) => o !== imp && !o.cartao && o.titular === tp && o.tipo !== imp.tipo && o.estado === 'novo' && Math.abs(o.valor - imp.valor) < 0.011 && Math.abs(diasEntre(o.data, imp.data)) <= 2);
-      sg = {acao: 'transfPessoa', de: imp.tipo === 'saida' ? imp.titular : tp, para: imp.tipo === 'saida' ? tp : imp.titular, parId: par?.[0] || null}; }
-    const id = F.id; closeModal(); const ok = await impAplica(id, sg); if (ok) toast(sg.acao === 'ignorar' ? 'Marcado como transferência entre contas.' : sg.acao === 'transfPessoa' ? 'Transferência registrada nos dois lados.' : 'Movimento da caixinha registrado.'); return; }
-  if (!F.descricao.trim()) return toast('Escreva uma descrição.'); if (!F.categoria) return toast('Escolha uma categoria.');
-  const sg = {acao: 'lancar', cat: F.categoria, desc: F.descricao.trim(), forn: F.fornecedor.trim(), nat: isFora(F.categoria) ? 'transferencia' : F.natureza || 'avulso', ...(F.caixinha && ['caixinha-aporte', 'caixinha-resgate'].includes(F.categoria) ? {caixinha: F.caixinha} : {}), ...(F.impulso && F.tipo === 'saida' ? {impulso: true} : {})};
-  const id = F.id; closeModal(); const ok = await impAplica(id, sg); if (ok) toast(`Lançado em ${catNome(F.categoria)}.`);
+async function submitImpForm() {
+  const F = S.form, imp = S.imps.get(F.impId); if (!imp) return; let sg;
+  if (F.modo === 'transf') { const o = F.outro; if (!o) return toast(imp.tipo === 'saida' ? 'Escolha para onde foi.' : 'Escolha de onde veio.');
+    if (o === 'propria') sg = {acao: 'ignorar', motivo: 'Transferência entre contas da mesma pessoa'};
+    else if (o.startsWith('cx:')) { const cx = o.slice(3), c = S.cxs.get(cx); sg = {acao: 'lancar', cat: imp.tipo === 'saida' ? 'caixinha-aporte' : 'caixinha-resgate', caixinha: cx, forn: c?.nome || '', desc: F.descricao.trim() && F.descricao.trim() !== (imp.descricao.split('|').pop() || '').trim() ? F.descricao.trim() : `${imp.tipo === 'saida' ? 'Guardar na caixinha' : 'Tirar da caixinha'} ${c?.nome || ''}`, nat: 'transferencia'}; }
+    else { const par = [...S.imps.entries()].find(([, x]) => x !== imp && !x.cartao && x.titular === o && x.tipo !== imp.tipo && x.estado === 'novo' && Math.abs(x.valor - imp.valor) < 0.011 && Math.abs(diasEntre(x.data, imp.data)) <= 2);
+      sg = {acao: 'transfPessoa', de: imp.tipo === 'saida' ? imp.titular : o, para: imp.tipo === 'saida' ? o : imp.titular, parId: par?.[0] || null}; }
+  } else { if (!F.descricao.trim()) return toast('Escreva uma descrição.'); if (!F.categoria) return toast('Escolha uma categoria.');
+    sg = {acao: 'lancar', cat: F.categoria, desc: F.descricao.trim(), forn: F.fornecedor.trim(), nat: isFora(F.categoria) ? 'transferencia' : F.natureza || 'avulso', ...(F.impulso && imp.tipo === 'saida' && F.categoria !== 'impulsos' ? {impulso: true} : {})}; }
+  const id = F.impId; closeModal(); const ok = await impAplica(id, sg);
+  if (ok) toast(sg.acao === 'ignorar' ? 'Marcado como transferência entre contas.' : sg.acao === 'transfPessoa' ? 'Transferência registrada nos dois lados.' : sg.caixinha ? 'Movimento da caixinha registrado.' : `Lançado em ${catNome(sg.cat)}.`);
 }
 async function submitLanc() {
+  if (S.form?.impId) return submitImpForm();
   const F = S.form; const v = parseValor(F.valor);
   if (isNaN(v) || v <= 0) return toast('Informe um valor maior que zero.');
   const card = cardById(F.meio);
@@ -3683,7 +3676,7 @@ async function submitLanc() {
   if (ok && Ti) { const g = round2(gAntes + nd.valor); return toast(`${g > Ti ? 'Estourou o teto de impulsos' : g > Ti * 0.8 ? 'Atenção: perto do teto' : 'Impulsos do mês'}: ${fmt(g)} de ${fmt(Ti)}.`, () => del('lancamentos', nid)); }
   if (ok) toast((status === 'previsto' ? 'Previsto salvo: ' : 'Salvo: ') + ondeCai(nd), () => del('lancamentos', nid));
 }
-function closeModal() { $('#modal').innerHTML = ''; S.form = null; S.impForm = null; S.recForm = null; S.divForm = null; S.cxForm = null; S.cxRend = null; }
+function closeModal() { $('#modal').innerHTML = ''; S.form = null; S.recForm = null; S.divForm = null; S.cxForm = null; S.cxRend = null; }
 
 /* ============ recorrência e dívida (formulários) ============ */
 function openRec(id) {
@@ -3844,10 +3837,8 @@ document.addEventListener('click', async e => {
     case 'giSalvar': { const L = []; for (let i = 0; i < 6; i++) { const c = document.querySelector(`[data-gi-cat="${i}"]`)?.value, t = parseValor(document.querySelector(`[data-gi-teto="${i}"]`)?.value || ''); if (c && !L.some(x => x.cat === c)) L.push({cat: c, teto: isNaN(t) || t <= 0 ? null : round2(t)}); } S.giEdit = false; await saveConfig({gastosImportam: L}); toast('Gastos que importam atualizados.'); break; }
     case 'tema': setTema(temaAtual() === 'dark' ? 'light' : 'dark'); render(); break;
     case 'impRev': openImpRev(el.dataset.id); break;
-    case 'irModo': if (S.impForm) { S.impForm.modo = el.dataset.v; drawImpRev(); } break;
-    case 'impRevSug': if (S.impForm) { S.impForm.categoria = el.dataset.c; drawImpRev(); } break;
     case 'criaCat': await criaCatInline(el.dataset.ctx); break;
-    case 'criaCatX': { const F = el.dataset.ctx === 'imp' ? S.impForm : S.form; if (F) { F.novaCat = false; el.dataset.ctx === 'imp' ? drawImpRev() : drawForm(!F.id); } break; }
+    case 'criaCatX': { const F = S.form; if (F) { F.novaCat = false; drawForm(!F.id); } break; }
     case 'impIgn': { const ok = await impAplica(el.dataset.id, {acao: 'ignorar', motivo: 'Ignorado manualmente'}); if (ok) toast('Ignorado.'); break; }
     case 'impLancar': { const imp = S.imps.get(el.dataset.id); if (!imp) break; const sg = impSugestao({...imp, descricao: imp.descricao + ' '}, new Set()); const ok = await impAplica(el.dataset.id, sg.acao === 'lancar' ? sg : {acao: 'lancar', cat: imp.tipo === 'saida' ? 'compras-diversas' : 'outros-nr', nat: 'avulso'}); if (ok) toast('Lançado.'); break; }
     case 'impSel': { S.impSel = S.impSel || new Set(); const id = el.dataset.id; S.impSel.has(id) ? S.impSel.delete(id) : S.impSel.add(id); render(); break; }
@@ -3905,7 +3896,7 @@ document.addEventListener('click', async e => {
     case 'divPago': divTogglePago(el.dataset.id, Number(el.dataset.i)); break;
     case 'close': closeModal(); break;
     case 'cancelConfirm': $('#confirm-area').innerHTML = ''; break;
-    case 'ftipo': { const t = el.dataset.t; S.form.modo = t; S.form.tipo = t === 'entrada' ? 'entrada' : 'saida'; S.form.categoria = ''; S.form.natureza = ''; if (t !== 'saida') { S.form.parcelas = 1; S.form.repetir = false; } if (t === 'transf' && (!S.form.para || S.form.para === S.form.titular)) S.form.para = outroTit(S.form.titular); drawForm(!S.form.id); break; }
+    case 'ftipo': { const t = el.dataset.t; S.form.modo = t; S.form.tipo = S.form.impId ? S.imps.get(S.form.impId)?.tipo || 'saida' : t === 'entrada' ? 'entrada' : 'saida'; S.form.categoria = ''; S.form.natureza = ''; if (t !== 'saida') { S.form.parcelas = 1; S.form.repetir = false; } if (t === 'transf' && (!S.form.para || S.form.para === S.form.titular)) S.form.para = outroTit(S.form.titular); drawForm(!S.form.id); break; }
     case 'rtipo': S.recForm.tipo = el.dataset.t; S.recForm.categoria = ''; drawRec(); break;
     case 'askDel': { const F = S.form; if (F.parcela) askConfirm('Excluir esta parcela ou a compra inteira?', [['delOne', 'Só esta parcela', 'danger'], ['delSerie', `Todas as ${F.parcela.total} parcelas`, 'danger']]); else askConfirm('Excluir este lançamento?', [['delOne', 'Excluir', 'danger']]); break; }
     case 'delOne': { const id = S.form.id; const par = S.lanc.get(id)?.par; closeModal(); if (await del('lancamentos', id)) { if (par && S.lanc.get(par)) await del('lancamentos', par); toast(par ? 'Transferência excluída nos dois lados.' : 'Lançamento excluído.'); } break; }
@@ -3986,12 +3977,6 @@ document.addEventListener('input', e => {
   if (e.target.dataset?.cpbusca) { S.cpBusca = e.target.value; clearTimeout(S._cpb); S._cpb = setTimeout(() => { render(); const b = $('#cp-busca'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } }, 250); return; }
   const t = e.target;
   if (t.id === 'cc-real') { const v = parseValor(t.value), d = $('#cc-dif'); if (d) d.textContent = isNaN(v) || S.concCalc == null ? '' : Math.abs(v - S.concCalc) < 0.01 ? 'Confere com o app.' : `Diferença: ${fmtS(v - S.concCalc)}`; return; }
-  if (t.dataset.fi && S.impForm) { const k = t.dataset.fi;
-    if (k === 'categoria' && t.value === '__nova') { S.impForm.catAntes = S.impForm.categoria; S.impForm.categoria = ''; S.impForm.novaCat = true; drawImpRev(); setTimeout(() => $('#nc2-nome')?.focus(), 30); return; }
-    S.impForm[k] = t.type === 'checkbox' ? t.checked : t.value;
-    if (k === 'categoria' || k === 'dest') { drawImpRev(); return; }
-    if (k === 'fornecedor') { const b = $('#ir-sug'); if (b) b.innerHTML = impRevSugHTML(); }
-    return; }
   if (t.dataset.f && S.form) {
     const k = t.dataset.f; if (k === 'categoria' && t.value === '__nova') { S.form.catAntes = S.form.categoria; S.form.categoria = ''; S.form.novaCat = true; drawForm(!S.form.id); setTimeout(() => $('#nc2-nome')?.focus(), 30); return; }
     S.form[k] = t.type === 'checkbox' ? t.checked : t.value;
@@ -4077,7 +4062,6 @@ document.addEventListener('change', async e => {
 document.addEventListener('submit', e => {
   e.preventDefault();
   if (e.target.id === 'lanc-form') submitLanc();
-  if (e.target.id === 'imp-form') submitImpRev();
   if (e.target.id === 'cx-form') submitCx();
   if (e.target.id === 'cxr-form') submitCxRend();
   else if (e.target.id === 'rec-form') submitRec();
